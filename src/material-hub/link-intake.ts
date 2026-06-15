@@ -1,4 +1,4 @@
-import path from "node:path";
+﻿import path from "node:path";
 import { sha1 } from "../core/hash.js";
 import { nowIso, dateFolder } from "../core/time.js";
 import { detectSource } from "../sources/detect.js";

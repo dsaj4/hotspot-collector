@@ -44,26 +44,25 @@ X recent search via official API has been removed from the hotspot collector.
 ## Architecture
 
 ```text
-source adapters
+collection
   |-- subscriptions
   |     |-- rss
   |     |-- rsshub
-  |     |-- wechat-rss
+  |     |-- browser-session
   |
   |-- hotspots
-        |-- bilibili
-        |-- weibo
-        |-- zhihu
-        |-- douyin
-        |-- baidu
-        |-- github
-        |-- hacker-news
-        |-- google-news
+  |     |-- adapters
+  |
+  |-- social
+        |-- ingest browser observations
+        |-- fallback public hotspot adapters
 
-collectors
-  |-- collect subscriptions
-  |-- collect hotspots
-  |-- ingest social observations
+integrations
+  |-- bilisum
+  |-- wewe-rss
+
+video-notes
+  |-- bilibili
 
 scheduler
   |-- plan due tasks

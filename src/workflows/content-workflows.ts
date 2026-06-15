@@ -1,4 +1,4 @@
-import path from "node:path";
+﻿import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { visionLibRoot } from "../config.js";
 import type { MaterialHubSourceItem, MaterialHubSourceKind, ProcessingTemplate } from "../material-hub/types.js";
@@ -7,7 +7,7 @@ import { digestSources } from "../material-hub/digest.js";
 import { exportNormalizedSourceItems } from "../material-hub/export-source-items.js";
 import { intakeTemporaryLink } from "../material-hub/link-intake.js";
 import { hubDayPath, writeJsonl } from "../material-hub/utils.js";
-import { intakeBilibiliVideo } from "../video-intake/bilibili.js";
+import { intakeBilibiliVideo } from "../video-notes/bilibili.js";
 
 export type WorkflowStage = "collect" | "digest" | "material";
 
@@ -17,10 +17,10 @@ function absoluteVisionRef(ref: string): string {
 
 async function collectKind(kind: Exclude<MaterialHubSourceKind, "temporary-link" | "ima">): Promise<unknown> {
   if (kind === "hotspot") {
-    const { collectHotspots } = await import("../collectors/hotspots.js");
+    const { collectHotspots } = await import("../collection/hotspots/collect.js");
     return collectHotspots();
   }
-  const { collectSubscriptions } = await import("../collectors/subscriptions.js");
+  const { collectSubscriptions } = await import("../collection/subscriptions/collect.js");
   return collectSubscriptions();
 }
 

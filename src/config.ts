@@ -1,6 +1,6 @@
-import type { SourceConfig } from "./types.js";
+﻿import type { SourceConfig } from "./types.js";
 import { parseCsvEnv, parseIntegerEnv } from "./core/env.js";
-import { readBiliSumLocalConfig } from "./video-intake/local-config.js";
+import { readBiliSumLocalConfig } from "./integrations/bilisum/local-config.js";
 import { dataPath, dataRoot, externalPath, externalRoot } from "./core/paths.js";
 
 const bilisumLocalConfig = readBiliSumLocalConfig();

@@ -82,10 +82,10 @@ Completed:
 - The old in-repository `company-wechat-rss/` wrapper has been deleted.
 - Generic skills were removed from this repository; only project-specific skills remain.
 - Old Bilibili dynamic/following/subtitle collectors, scheduler tasks, CLI commands, and vendored RSSWorker code have been deleted.
+- Source and test files are organized by functional domain under `src/collection`, `src/integrations`, `src/video-notes`, `src/reporting`, and mirrored test folders.
 
 Still in progress:
 
-- Source/test tree reorganization after deprecated collector removal.
 - Real smoke test with `BV1tfoNBqEtN`.
 
 Known caution:

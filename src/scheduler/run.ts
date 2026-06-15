@@ -1,4 +1,4 @@
-import type { CollectionResult } from "../types.js";
+﻿import type { CollectionResult } from "../types.js";
 import { buildDefaultTasks, planTasks, readSchedulerState, writeTaskResult, type PlannedTask, type TaskId } from "./tasks.js";
 
 type TaskRunOutput = {
@@ -17,11 +17,11 @@ export type SchedulerRunOptions = {
 
 async function runTask(taskId: TaskId): Promise<CollectionResult | Record<string, unknown>> {
   if (taskId === "collect:hotspots") {
-    const { collectHotspots } = await import("../collectors/hotspots.js");
+    const { collectHotspots } = await import("../collection/hotspots/collect.js");
     return collectHotspots();
   }
   if (taskId === "collect:subscriptions") {
-    const { collectSubscriptions } = await import("../collectors/subscriptions.js");
+    const { collectSubscriptions } = await import("../collection/subscriptions/collect.js");
     return collectSubscriptions();
   }
   throw new Error(`Unknown task: ${taskId}`);

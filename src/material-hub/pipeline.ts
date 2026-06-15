@@ -1,4 +1,4 @@
-import type { CollectionResult } from "../types.js";
+﻿import type { CollectionResult } from "../types.js";
 import type { ExportSourceItemsResult } from "./export-source-items.js";
 import { exportNormalizedSourceItems } from "./export-source-items.js";
 import type { ProcessMaterialsResult } from "./processing.js";
@@ -30,16 +30,16 @@ export type RunMaterialPipelineResult = {
 async function runCollection(mode: MaterialPipelineCollectMode): Promise<RunMaterialPipelineResult["collection"]> {
   if (mode === "skip") return {};
   if (mode === "hotspots") {
-    const { collectHotspots } = await import("../collectors/hotspots.js");
+    const { collectHotspots } = await import("../collection/hotspots/collect.js");
     return { hotspots: await collectHotspots() };
   }
   if (mode === "subscriptions") {
-    const { collectSubscriptions } = await import("../collectors/subscriptions.js");
+    const { collectSubscriptions } = await import("../collection/subscriptions/collect.js");
     return { subscriptions: await collectSubscriptions() };
   }
 
-  const { collectSubscriptions } = await import("../collectors/subscriptions.js");
-  const { collectHotspots } = await import("../collectors/hotspots.js");
+  const { collectSubscriptions } = await import("../collection/subscriptions/collect.js");
+  const { collectHotspots } = await import("../collection/hotspots/collect.js");
   const subscriptions = await collectSubscriptions();
   const hotspots = await collectHotspots();
   return { subscriptions, hotspots };

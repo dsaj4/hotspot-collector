@@ -18,19 +18,19 @@ Only the source repository is committed here. Data and external apps are mounted
 
 ```text
 src/
-  adapters/       source adapters for hotspots and subscriptions
-  collectors/     collector orchestration
+  cli/            command-line entrypoint
+  collection/     hotspot, subscription, and social collection
   core/           shared paths, storage, env, time, HTTP, secrets, browser helpers
-  feeds/          compatibility feed generation
+  integrations/   external BiliSum and WeWe RSS integration clients/setup
   material-hub/   source digest, aggregation, material-card workflow
-  materials/      material output helpers
+  reporting/      compatibility feed and daily-report commands
   scheduler/      one-shot scheduled task planning and execution
-  social/         browser-observation ingestion and fallback
   sources/        source catalog and URL detection
-  validators/     fixture and normalized-record validators
-  video-intake/   BiliSum integration and Bilibili URL intake
+  validation/     fixture and normalized-record validators
+  video-notes/    Bilibili note intake through BiliSum
+  workflows/      higher-level workflow composition
 
-tests/            Vitest coverage for local TypeScript behavior
+tests/            Vitest coverage organized by functional domain
 fixtures/         redacted public fixtures only
 config/           checked-in example config only
 docs/             architecture, operations, integrations, requirements, migration notes
