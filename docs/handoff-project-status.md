@@ -81,10 +81,10 @@ Completed:
 - WeWe RSS official-account export exists in the external fork.
 - The old in-repository `company-wechat-rss/` wrapper has been deleted.
 - Generic skills were removed from this repository; only project-specific skills remain.
+- Old Bilibili dynamic/following/subtitle collectors, scheduler tasks, CLI commands, and vendored RSSWorker code have been deleted.
 
 Still in progress:
 
-- Deletion of old Bilibili dynamic/following/subtitle collectors and their scheduler/tests.
 - Source/test tree reorganization after deprecated collector removal.
 - Real smoke test with `BV1tfoNBqEtN`.
 
@@ -92,7 +92,7 @@ Known caution:
 
 - A local service may already be listening on BiliSum port `3838`. Confirm it is running from `E:/Project/hotspot-collector-external/BiliSum`, not the old `.tmp-bilisum-analysis` runtime, before treating a video-note smoke test as valid.
 
-Deprecated entries still present until the next cleanup phase:
+Removed entries:
 
 ```text
 discover:bilibili-followings

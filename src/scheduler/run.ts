@@ -24,14 +24,6 @@ async function runTask(taskId: TaskId): Promise<CollectionResult | Record<string
     const { collectSubscriptions } = await import("../collectors/subscriptions.js");
     return collectSubscriptions();
   }
-  if (taskId === "discover:bilibili-followings") {
-    const { discoverBilibiliFollowings } = await import("../collectors/subscriptions.js");
-    return discoverBilibiliFollowings();
-  }
-  if (taskId === "collect:subscriptions:followings") {
-    const { collectFollowingSubscriptions } = await import("../collectors/subscriptions.js");
-    return collectFollowingSubscriptions();
-  }
   throw new Error(`Unknown task: ${taskId}`);
 }
 

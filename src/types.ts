@@ -4,7 +4,7 @@ export type SourceStatus = "ok" | "cache" | "empty" | "error" | "unavailable";
 
 export type SourceFetchMode = "public-api" | "direct-rss" | "rsshub" | "cookie-http" | "browser-session";
 export type SocialStreamType = "subscription" | "search" | "favorite" | "hotspot" | "home-feed";
-export type SocialFallbackAdapter = "bilibili-subscriptions" | "bilibili-hotspots" | "weibo-hotspots" | "rsshub-subscription";
+export type SocialFallbackAdapter = "bilibili-hotspots" | "weibo-hotspots" | "rsshub-subscription";
 
 export type SourceConfig = {
   id: string;
@@ -103,18 +103,6 @@ export type SubscriptionItem = {
   dedupeKey: string;
 };
 
-export type FollowedUser = {
-  platform: "bilibili" | "x";
-  uid: string;
-  name: string;
-  username?: string;
-  face?: string;
-  sign?: string;
-  sourceId: string;
-  capturedAt: string;
-  rawRef: string;
-};
-
 export type HotspotItem = {
   id: string;
   sourceId: string;
@@ -138,31 +126,12 @@ export type TranscriptSegment = {
   text: string;
 };
 
-export type VideoTranscriptItem = {
-  id: string;
-  sourceId: string;
-  platform: "bilibili";
-  provider: string;
-  videoId: string;
-  title: string;
-  url: string;
-  language: string;
-  transcriptKind: "ai-subtitle" | "platform-subtitle";
-  capturedAt: string;
-  text: string;
-  segments: TranscriptSegment[];
-  rawRef: string;
-  dedupeKey: string;
-};
-
 export type CollectionResult = {
   rawRefs: string[];
   normalizedRefs: string[];
   health: SourceHealth[];
   subscriptionCount?: number;
   hotspotCount?: number;
-  transcriptCount?: number;
-  aiTranscriptCount?: number;
 };
 
 export type CandidateAsset = {

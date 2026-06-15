@@ -7,13 +7,6 @@ const tasks: TaskDefinition[] = [
     description: "Hotspots",
     intervalMinutes: 15,
     enabled: true
-  },
-  {
-    id: "discover:bilibili-followings",
-    description: "Bilibili followings",
-    intervalMinutes: 360,
-    enabled: false,
-    reason: "BILIBILI_COOKIE is required."
   }
 ];
 
@@ -21,13 +14,6 @@ describe("scheduler planning", () => {
   it("marks enabled tasks without state as due", () => {
     const planned = planTasks(tasks, { tasks: {} }, new Date("2026-05-28T12:00:00.000Z"));
     expect(planned.find((task) => task.id === "collect:hotspots")?.due).toBe(true);
-  });
-
-  it("does not mark disabled tasks as due", () => {
-    const planned = planTasks(tasks, { tasks: {} }, new Date("2026-05-28T12:00:00.000Z"));
-    const disabled = planned.find((task) => task.id === "discover:bilibili-followings");
-    expect(disabled?.due).toBe(false);
-    expect(disabled?.reason).toBe("BILIBILI_COOKIE is required.");
   });
 
   it("uses last finished time to calculate next run", () => {
@@ -52,6 +38,6 @@ describe("scheduler planning", () => {
     const defaults = buildDefaultTasks();
     expect(defaults.find((task) => task.id === "collect:hotspots")?.intervalMinutes).toBe(60);
     expect(defaults.find((task) => task.id === "collect:subscriptions")?.intervalMinutes).toBe(60);
-    expect(defaults.some((task) => task.description.includes("Bilibili UID"))).toBe(false);
+    expect(defaults.some((task) => task.id.includes("bilibili"))).toBe(false);
   });
 });

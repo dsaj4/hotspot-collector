@@ -17,11 +17,8 @@
   ],
   "scripts": {
     "collect:subscriptions": "tsx src/cli.ts collect:subscriptions",
-    "discover:bilibili-followings": "tsx src/cli.ts discover:bilibili-followings",
-    "collect:subscriptions:followings": "tsx src/cli.ts collect:subscriptions:followings",
     "collect:official-accounts": "tsx src/cli.ts collect:official-accounts",
     "collect:wechat": "tsx src/cli.ts collect:wechat",
-    "collect:bilibili-subtitles": "tsx src/cli.ts collect:bilibili-subtitles",
     "video:intake-bilibili": "tsx src/cli.ts video:intake-bilibili",
     "video:notes-bilibili": "tsx src/cli.ts video:notes-bilibili",
     "video:notes-bilibili-list": "tsx src/cli.ts video:notes-bilibili-list",

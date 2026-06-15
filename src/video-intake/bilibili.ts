@@ -1,14 +1,12 @@
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { bilisumAccessToken, bilisumBaseUrl, bilisumPollIntervalMs, bilisumTaskTimeoutMs, bilisumVisualNoteMode } from "../config.js";
 import { appendJsonlUnique } from "../core/storage.js";
 import { sha1 } from "../core/hash.js";
 import { dateFolder, nowIso } from "../core/time.js";
-import { collectBilibiliSubtitle, extractBilibiliVideoId, type YtdlpRunner } from "../adapters/subscriptions/bilibili-subtitles.js";
-import { findLatestBilibiliSubtitleCandidates } from "../collectors/bilibili-subtitles.js";
 import type { MaterialHubSourceItem, MaterialHubSourceKind } from "../material-hub/types.js";
 import { hubDayPath, materialHubRoot, normalizeRelPath } from "../material-hub/utils.js";
-import type { BrowserObservation, TranscriptSegment } from "../types.js";
+import type { BrowserObservation, HotspotItem, SubscriptionItem, TranscriptSegment } from "../types.js";
 import { BiliSumClient, type BiliSumMindmapResponse, type BiliSumTaskDetail, type BiliSumTaskResult, type BiliSumVisualEvidenceResponse } from "./bilisum-client.js";
 import type { BiliSumClientConfig, VideoIntakeCandidate, VideoProcessingResult, VideoTranscriptKind } from "./types.js";
 
@@ -21,7 +19,6 @@ export type IntakeBilibiliVideoOptions = {
   publishedAt?: string | null;
   day?: string;
   client?: BiliSumClient;
-  runner?: YtdlpRunner;
   config?: Partial<BiliSumClientConfig>;
   publishToMaterialHub?: boolean;
 };
@@ -51,7 +48,6 @@ export type IntakeBilibiliVideoListOptions = {
   limit?: number;
   day?: string;
   client?: BiliSumClient;
-  runner?: YtdlpRunner;
   config?: Partial<BiliSumClientConfig>;
   publishToMaterialHub?: boolean;
 };
@@ -105,6 +101,66 @@ function asStringArray(value: unknown): string[] {
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+}
+
+export function extractBilibiliVideoId(url: string): string | null {
+  const match = url.match(/bilibili\.com\/video\/(BV[0-9A-Za-z]+|av\d+)/i);
+  return match?.[1] ?? null;
+}
+
+async function latestNormalizedFile(fileName: string): Promise<string | null> {
+  const dir = path.join(process.cwd(), "data", "normalized");
+  let dates: string[] = [];
+  try {
+    dates = (await readdir(dir, { withFileTypes: true })).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort().reverse();
+  } catch {
+    return null;
+  }
+
+  for (const date of dates) {
+    const file = path.join(dir, date, fileName);
+    try {
+      await readFile(file, "utf8");
+      return file;
+    } catch {
+      // Try the next date folder.
+    }
+  }
+  return null;
+}
+
+async function readJsonl<T>(filePath: string | null): Promise<T[]> {
+  if (!filePath) return [];
+  const text = await readFile(filePath, "utf8");
+  return text
+    .split(/\r?\n/)
+    .filter((line) => line.trim())
+    .map((line) => JSON.parse(line) as T);
+}
+
+async function findLatestBilibiliVideoCandidates(): Promise<VideoIntakeCandidate[]> {
+  const subscriptions = await readJsonl<SubscriptionItem>(await latestNormalizedFile("subscriptions.jsonl"));
+  const hotspots = await readJsonl<HotspotItem>(await latestNormalizedFile("hotspots.jsonl"));
+  const seen = new Set<string>();
+  const candidates: VideoIntakeCandidate[] = [];
+
+  for (const item of [...subscriptions, ...hotspots]) {
+    if (item.platform !== "bilibili") continue;
+    const videoId = extractBilibiliVideoId(item.url);
+    if (!videoId || seen.has(videoId)) continue;
+    seen.add(videoId);
+    candidates.push({
+      sourceItemId: item.id,
+      sourceKind: "rank" in item ? "hotspot" : "subscription",
+      title: item.title,
+      url: item.url,
+      authorId: "authorId" in item ? item.authorId : undefined,
+      authorName: "authorName" in item ? item.authorName : undefined,
+      publishedAt: "publishedAt" in item ? item.publishedAt : undefined
+    });
+  }
+
+  return candidates;
 }
 
 function asVideoListItems(payload: unknown): { inputKind: "url-list" | "browser-observation"; sourcePageUrl?: string; items: BilibiliVideoListItem[] } {
@@ -261,30 +317,9 @@ function artifactsFrom(task: BiliSumTaskDetail | undefined, result: BiliSumTaskR
   return rows;
 }
 
-function buildNeedsAsrResult(candidate: VideoIntakeCandidate, videoId: string | null, warnings: string[]): VideoProcessingResult {
-  return {
-    status: "needs_asr",
-    source: {
-      platform: "bilibili",
-      url: candidate.url,
-      videoId: videoId ?? undefined,
-      title: candidate.title,
-      authorId: candidate.authorId,
-      authorName: candidate.authorName,
-      publishedAt: candidate.publishedAt
-    },
-    acquisition: { transcriptKind: "missing", provider: "subtitle-precheck", usedAsr: false, warnings },
-    transcript: { text: "", segments: [] },
-    videoNote: { markdown: "" },
-    visualEvidence: [],
-    artifacts: []
-  };
-}
-
 function buildVideoResult(input: {
   candidate: VideoIntakeCandidate;
   videoId: string | null;
-  subtitle: Awaited<ReturnType<typeof collectBilibiliSubtitle>>["item"];
   task: BiliSumTaskDetail;
   mindmap?: BiliSumMindmapResponse;
   visual?: BiliSumVisualEvidenceResponse;
@@ -294,8 +329,9 @@ function buildVideoResult(input: {
   const bilisumSegments = Array.isArray(result.segments)
     ? result.segments.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object" && !Array.isArray(item))).map(segmentFromBiliSum).filter((item): item is TranscriptSegment => Boolean(item))
     : [];
-  const transcriptText = asString(result.transcript_text).trim() || input.subtitle?.text || "";
-  const transcriptKind = normalizeTranscriptKind(input.subtitle?.provider ?? "", input.subtitle?.transcriptKind ?? "platform-subtitle");
+  const transcriptText = asString(result.transcript_text).trim();
+  const transcriptProvider = asString(result.artifacts?.transcript_provider) || asString(result.artifacts?.subtitle_provider) || "bilisum";
+  const transcriptKind = normalizeTranscriptKind(transcriptProvider, transcriptText ? "platform-subtitle" : "missing");
   const visualEvidence = normalizeVisualEvidence(input.visual);
   const enhanced = asString(input.visual?.enhanced_note_markdown).trim();
   const visualNote = asString(input.visual?.visual_note_markdown).trim();
@@ -306,19 +342,19 @@ function buildVideoResult(input: {
     source: {
       platform: "bilibili",
       url: input.candidate.url,
-      videoId: input.videoId ?? input.subtitle?.videoId,
-      title: input.candidate.title || asString(input.task.title) || input.subtitle?.title || "Bilibili video",
+      videoId: input.videoId ?? undefined,
+      title: input.candidate.title || asString(input.task.title) || "Bilibili video",
       authorId: input.candidate.authorId,
       authorName: input.candidate.authorName,
       publishedAt: input.candidate.publishedAt
     },
     acquisition: {
       transcriptKind,
-      provider: input.subtitle?.provider ?? "bilisum",
-      usedAsr: false,
+      provider: transcriptProvider,
+      usedAsr: transcriptKind === "asr-transcript",
       warnings: input.warnings
     },
-    transcript: { text: transcriptText, segments: bilisumSegments.length ? bilisumSegments : input.subtitle?.segments ?? [] },
+    transcript: { text: transcriptText, segments: bilisumSegments },
     videoNote: { markdown: visualNote || knowledgeNote, enhancedMarkdown: enhanced || undefined },
     mindmap: input.mindmap ? { status: input.mindmap.status, json: input.mindmap.mindmap, textSummary: mindmapSummary || undefined } : undefined,
     visualEvidence,
@@ -513,39 +549,49 @@ export async function intakeBilibiliVideo(options: IntakeBilibiliVideoOptions): 
   const videoId = extractBilibiliVideoId(options.url);
   if (!videoId) throw new Error(`Not a Bilibili video URL: ${options.url}`);
 
-  const subtitle = await collectBilibiliSubtitle({ sourceItemId: candidate.sourceItemId ?? `manual-${sha1(options.url).slice(0, 8)}`, title: candidate.title, url: candidate.url }, options.runner);
   const warnings: string[] = [];
   let processing: VideoProcessingResult;
   let taskId: string | undefined;
 
-  if (!subtitle.item) {
-    warnings.push(subtitle.health.message ?? "No Bilibili subtitle available; ASR is required but not automatic in version 1.");
-    processing = buildNeedsAsrResult(candidate, videoId, warnings);
+  const client = options.client ?? new BiliSumClient(defaultConfig(options.config));
+  const created = await client.createBilibiliUrlTask({ url: candidate.url, title: candidate.title, visualNoteMode: options.config?.visualNoteMode });
+  taskId = created.task_id;
+  const task = await client.waitForTask(created.task_id);
+  if (task.status !== "completed") {
+    warnings.push(task.error_message ?? `BiliSum task ended with status ${task.status}.`);
+    processing = {
+      status: "failed",
+      source: {
+        platform: "bilibili",
+        url: candidate.url,
+        videoId: videoId ?? undefined,
+        title: candidate.title,
+        authorId: candidate.authorId,
+        authorName: candidate.authorName,
+        publishedAt: candidate.publishedAt
+      },
+      acquisition: { transcriptKind: "missing", provider: "bilisum", usedAsr: false, warnings },
+      transcript: { text: "", segments: [] },
+      videoNote: { markdown: "" },
+      visualEvidence: [],
+      artifacts: artifactsFrom(task, task.result ?? undefined, undefined, undefined)
+    };
   } else {
-    const client = options.client ?? new BiliSumClient(defaultConfig(options.config));
-    const created = await client.createBilibiliUrlTask({ url: candidate.url, title: candidate.title, visualNoteMode: options.config?.visualNoteMode });
-    taskId = created.task_id;
-    const task = await client.waitForTask(created.task_id);
-    if (task.status !== "completed") {
-      warnings.push(task.error_message ?? `BiliSum task ended with status ${task.status}.`);
-      processing = { ...buildNeedsAsrResult(candidate, videoId, warnings), status: "failed", acquisition: { transcriptKind: subtitle.item.transcriptKind, provider: subtitle.item.provider, usedAsr: false, warnings } };
-    } else {
-      let mindmap: BiliSumMindmapResponse | undefined;
-      let visual: BiliSumVisualEvidenceResponse | undefined;
-      try {
-        mindmap = await client.generateMindmap(task.task_id);
-        mindmap = await client.waitForMindmap(task.task_id, mindmap);
-      } catch (error) {
-        warnings.push(`Mindmap unavailable: ${error instanceof Error ? error.message : String(error)}`);
-      }
-      try {
-        visual = await client.generateVisualEvidence(task.task_id, options.config?.visualNoteMode);
-        visual = await client.waitForVisualEvidence(task.task_id, visual);
-      } catch (error) {
-        warnings.push(`Visual evidence unavailable: ${error instanceof Error ? error.message : String(error)}`);
-      }
-      processing = buildVideoResult({ candidate, videoId, subtitle: subtitle.item, task, mindmap, visual, warnings });
+    let mindmap: BiliSumMindmapResponse | undefined;
+    let visual: BiliSumVisualEvidenceResponse | undefined;
+    try {
+      mindmap = await client.generateMindmap(task.task_id);
+      mindmap = await client.waitForMindmap(task.task_id, mindmap);
+    } catch (error) {
+      warnings.push(`Mindmap unavailable: ${error instanceof Error ? error.message : String(error)}`);
     }
+    try {
+      visual = await client.generateVisualEvidence(task.task_id, options.config?.visualNoteMode);
+      visual = await client.waitForVisualEvidence(task.task_id, visual);
+    } catch (error) {
+      warnings.push(`Visual evidence unavailable: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    processing = buildVideoResult({ candidate, videoId, task, mindmap, visual, warnings });
   }
 
   const videoResultRef = await writeVideoProcessingResult(day, processing);
@@ -572,9 +618,9 @@ export async function intakeBilibiliVideo(options: IntakeBilibiliVideoOptions): 
 }
 
 export async function intakeLatestBilibiliVideos(
-  options: { limit?: number; day?: string; client?: BiliSumClient; runner?: YtdlpRunner; config?: Partial<BiliSumClientConfig> } = {}
+  options: { limit?: number; day?: string; client?: BiliSumClient; config?: Partial<BiliSumClientConfig> } = {}
 ): Promise<IntakeLatestBilibiliVideosResult> {
-  const candidates = await findLatestBilibiliSubtitleCandidates();
+  const candidates = await findLatestBilibiliVideoCandidates();
   const selected = candidates.slice(0, options.limit ?? 5);
   const results: IntakeBilibiliVideoResult[] = [];
   for (const candidate of selected) {
@@ -585,7 +631,6 @@ export async function intakeLatestBilibiliVideos(
         sourceKind: "subscription",
         day: options.day,
         client: options.client,
-        runner: options.runner,
         config: options.config
       })
     );
@@ -617,7 +662,6 @@ export async function intakeBilibiliVideoList(options: IntakeBilibiliVideoListOp
       sourceKind: "temporary-link",
       day,
       client: options.client,
-      runner: options.runner,
       config: options.config,
       publishToMaterialHub: options.publishToMaterialHub ?? false
     }));

@@ -1,36 +1,27 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
-import { describe, expect, it, vi } from "vitest";
-import { intakeBilibiliVideo, intakeBilibiliVideoList, mapVideoProcessingResultToSourceItem, formatVideoProcessingContent } from "../src/video-intake/bilibili.js";
-import { BiliSumClient, type BiliSumMindmapResponse, type BiliSumTaskDetail, type BiliSumVisualEvidenceResponse } from "../src/video-intake/bilisum-client.js";
+import { describe, expect, it } from "vitest";
+import {
+  extractBilibiliVideoId,
+  formatVideoProcessingContent,
+  intakeBilibiliVideo,
+  intakeBilibiliVideoList,
+  mapVideoProcessingResultToSourceItem
+} from "../src/video-intake/bilibili.js";
+import {
+  BiliSumClient,
+  type BiliSumMindmapResponse,
+  type BiliSumTaskDetail,
+  type BiliSumVisualEvidenceResponse
+} from "../src/video-intake/bilisum-client.js";
 import type { VideoProcessingResult } from "../src/video-intake/types.js";
-import type { YtdlpRunner } from "../src/adapters/subscriptions/bilibili-subtitles.js";
 
 async function tempWorkdir(name: string): Promise<string> {
   const dir = path.join(tmpdir(), `hotspot-video-intake-${name}-${Date.now()}`);
   await mkdir(dir, { recursive: true });
   return dir;
 }
-
-const subtitleRunner: YtdlpRunner = async ({ outputBase }) => {
-  await mkdir(path.dirname(outputBase), { recursive: true });
-  await import("node:fs/promises").then(({ writeFile }) =>
-    writeFile(
-      `${outputBase}.ai-zh.vtt`,
-      `WEBVTT
-
-00:00:01.000 --> 00:00:03.000
-这是一段关于 AI 工具链的视频。
-
-00:00:04.000 --> 00:00:07.000
-作者展示了从素材到卡片的流程。
-`,
-      "utf8"
-    )
-  );
-  return { code: 0, stdout: "", stderr: "" };
-};
 
 class FakeBiliSumClient extends BiliSumClient {
   constructor() {
@@ -45,11 +36,11 @@ class FakeBiliSumClient extends BiliSumClient {
     return {
       task_id: "task-1",
       status: "completed",
-      title: "AI 工具链视频",
+      title: "AI toolchain video",
       result: {
-        knowledge_note_markdown: "## 视频笔记\n作者讲了素材采集、整理和卡片生成。",
-        transcript_text: "这是一段关于 AI 工具链的视频。\n作者展示了从素材到卡片的流程。",
-        segments: [{ start: "00:00:01", end: "00:00:03", text: "这是一段关于 AI 工具链的视频。" }],
+        knowledge_note_markdown: "## Knowledge Note\nThe author explains collection, organization, and card generation.",
+        transcript_text: "This is a video about an AI toolchain.\nThe author shows the path from source material to cards.",
+        segments: [{ start: "00:00:01", end: "00:00:03", text: "This is a video about an AI toolchain." }],
         artifacts: { summary_path: "tasks/task-1/summary.json", visual_context_path: "tasks/task-1/visual_context.json" }
       }
     };
@@ -60,15 +51,15 @@ class FakeBiliSumClient extends BiliSumClient {
       task_id: "task-1",
       status: "ready",
       mindmap: {
-        title: "AI 工具链视频",
+        title: "AI toolchain video",
         root: "root",
         nodes: [
           {
             id: "root",
-            label: "素材处理中枢",
+            label: "Material processing hub",
             type: "root",
-            summary: "把采集、整理和卡片生成串起来。",
-            children: [{ id: "leaf-1", label: "卡片生成", type: "leaf", summary: "输出可读素材卡。", children: [], time_anchor: 4 }]
+            summary: "Connects collection, organization, and card generation.",
+            children: [{ id: "leaf-1", label: "Card generation", type: "leaf", summary: "Outputs readable material cards.", children: [], time_anchor: 4 }]
           }
         ]
       }
@@ -79,8 +70,8 @@ class FakeBiliSumClient extends BiliSumClient {
     return {
       task_id: "task-1",
       status: "ready",
-      visual_note_markdown: "## 图文笔记\n视频展示了工具界面。",
-      enhanced_note_markdown: "## 增强笔记\n作者用界面演示素材到卡片的路径。",
+      visual_note_markdown: "## Visual Note\nThe video shows the tool UI.",
+      enhanced_note_markdown: "## Enhanced Note\nThe author demonstrates the route from material to cards.",
       context: {
         frame_index_path: "frame_index.json",
         visual_insert_plan_path: "visual_insert_plan.json",
@@ -89,10 +80,10 @@ class FakeBiliSumClient extends BiliSumClient {
           {
             frame_id: "f0001",
             timestamp_seconds: 4,
-            caption: "工具界面截图",
+            caption: "Tool UI screenshot",
             ocr_text: "Material Card",
-            key_facts: ["界面出现 Material Card"],
-            semantic_summary: "画面显示素材卡生成界面",
+            key_facts: ["The UI shows Material Card"],
+            semantic_summary: "The frame shows a material-card generation interface.",
             importance: 4,
             should_insert: true
           }
@@ -147,6 +138,12 @@ class UnsupportedVisualBiliSumClient extends FakeBiliSumClient {
 }
 
 describe("BiliSum Bilibili video intake", () => {
+  it("extracts Bilibili video ids from video URLs", () => {
+    expect(extractBilibiliVideoId("https://www.bilibili.com/video/BV1Fa4y1273F/?spm_id_from=333")).toBe("BV1Fa4y1273F");
+    expect(extractBilibiliVideoId("https://www.bilibili.com/video/av123456")).toBe("av123456");
+    expect(extractBilibiliVideoId("https://t.bilibili.com/123")).toBeNull();
+  });
+
   it("normalizes BiliSum notes, mindmap, and visual evidence into a material source item", async () => {
     const root = await tempWorkdir("ok");
     const previous = process.cwd();
@@ -154,9 +151,8 @@ describe("BiliSum Bilibili video intake", () => {
     try {
       const result = await intakeBilibiliVideo({
         url: "https://www.bilibili.com/video/BV1Fa4y1273F",
-        title: "AI 工具链视频",
+        title: "AI toolchain video",
         client: new FakeBiliSumClient(),
-        runner: subtitleRunner,
         day: "2026-06-13"
       });
 
@@ -171,7 +167,7 @@ describe("BiliSum Bilibili video intake", () => {
 
       const saved = JSON.parse(await readFile(path.join(root, "data", "video-intake", "2026-06-13", path.basename(result.videoResultRef)), "utf8")) as VideoProcessingResult;
       expect(saved.visualEvidence[0]?.frameId).toBe("f0001");
-      expect(saved.mindmap?.textSummary).toContain("素材处理中枢");
+      expect(saved.mindmap?.textSummary).toContain("Material processing hub");
     } finally {
       process.chdir(previous);
     }
@@ -186,7 +182,6 @@ describe("BiliSum Bilibili video intake", () => {
         url: "https://www.bilibili.com/video/BV1Fa4y1273F",
         title: "Standalone notes",
         client: new FakeBiliSumClient(),
-        runner: subtitleRunner,
         day: "2026-06-13",
         publishToMaterialHub: false
       });
@@ -209,7 +204,6 @@ describe("BiliSum Bilibili video intake", () => {
         url: "https://www.bilibili.com/video/BV1Fa4y1273F",
         title: "Unsupported visual",
         client: new UnsupportedVisualBiliSumClient(),
-        runner: subtitleRunner,
         day: "2026-06-13",
         publishToMaterialHub: false
       });
@@ -225,26 +219,29 @@ describe("BiliSum Bilibili video intake", () => {
     }
   });
 
-  it("returns needs_asr without calling BiliSum when subtitles are unavailable", async () => {
-    const root = await tempWorkdir("needs-asr");
+  it("returns failed when BiliSum cannot complete the task", async () => {
+    class FailedBiliSumClient extends FakeBiliSumClient {
+      override async waitForTask(): Promise<BiliSumTaskDetail> {
+        return { task_id: "task-failed", status: "failed", error_message: "transcript unavailable" };
+      }
+    }
+
+    const root = await tempWorkdir("failed-task");
     const previous = process.cwd();
     process.chdir(root);
-    const create = vi.spyOn(FakeBiliSumClient.prototype, "createBilibiliUrlTask");
     try {
       const result = await intakeBilibiliVideo({
         url: "https://www.bilibili.com/video/BV1Fa4y1273F",
-        title: "No subtitles",
-        client: new FakeBiliSumClient(),
-        runner: async () => ({ code: 0, stdout: "", stderr: "" }),
+        title: "Failed task",
+        client: new FailedBiliSumClient(),
         day: "2026-06-13"
       });
 
-      expect(result.status).toBe("needs_asr");
-      expect(create).not.toHaveBeenCalled();
+      expect(result.status).toBe("failed");
+      expect(result.warnings).toContain("transcript unavailable");
       expect(result.sourceItem).toBeUndefined();
     } finally {
       process.chdir(previous);
-      create.mockRestore();
     }
   });
 
@@ -253,7 +250,7 @@ describe("BiliSum Bilibili video intake", () => {
       {
         status: "completed",
         source: { platform: "bilibili", url: "https://www.bilibili.com/video/BV123", videoId: "BV123", title: "Video" },
-        acquisition: { transcriptKind: "ai-subtitle", provider: "bilibili-player-ai-subtitle", usedAsr: false, warnings: [] },
+        acquisition: { transcriptKind: "ai-subtitle", provider: "bilisum", usedAsr: false, warnings: [] },
         transcript: { text: "raw transcript", segments: [{ start: "00:01", end: "00:02", text: "raw transcript" }] },
         videoNote: { markdown: "knowledge note", enhancedMarkdown: "enhanced note" },
         visualEvidence: [{ frameId: "f1", timestamp: "00:01", timestampSeconds: 1, imageRef: "frames/f1.jpg", caption: "caption", source: "bilisum-visual-context" }],
@@ -266,7 +263,7 @@ describe("BiliSum Bilibili video intake", () => {
     expect(formatVideoProcessingContent({
       status: "completed",
       source: { platform: "bilibili", url: "https://www.bilibili.com/video/BV123", videoId: "BV123", title: "Video" },
-      acquisition: { transcriptKind: "ai-subtitle", provider: "bilibili-player-ai-subtitle", usedAsr: false, warnings: [] },
+      acquisition: { transcriptKind: "ai-subtitle", provider: "bilisum", usedAsr: false, warnings: [] },
       transcript: { text: "raw transcript", segments: [{ start: "00:01", end: "00:02", text: "raw transcript" }] },
       videoNote: { markdown: "knowledge note", enhancedMarkdown: "enhanced note" },
       visualEvidence: [{ frameId: "f1", timestamp: "00:01", timestampSeconds: 1, imageRef: "frames/f1.jpg", caption: "caption", source: "bilisum-visual-context" }],
@@ -292,7 +289,6 @@ describe("BiliSum Bilibili video intake", () => {
       const result = await intakeBilibiliVideoList({
         inputPath,
         client: new FakeBiliSumClient(),
-        runner: subtitleRunner,
         day: "2026-06-13",
         limit: 10
       });
@@ -330,7 +326,6 @@ describe("BiliSum Bilibili video intake", () => {
       const result = await intakeBilibiliVideoList({
         inputPath,
         client: new FakeBiliSumClient(),
-        runner: subtitleRunner,
         day: "2026-06-13",
         limit: 1
       });

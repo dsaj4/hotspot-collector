@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { HotspotItem, SocialItem, SourceHealth, SubscriptionItem, VideoTranscriptItem } from "../types.js";
+import type { HotspotItem, SocialItem, SourceHealth, SubscriptionItem } from "../types.js";
 import { dateFolder, safeTimestamp } from "./time.js";
 import { sourceSafeName } from "./hash.js";
 import { artifactPath } from "./paths.js";
@@ -50,10 +50,6 @@ export async function appendSubscriptions(items: SubscriptionItem[]): Promise<st
 
 export async function appendHotspots(items: HotspotItem[]): Promise<string> {
   return appendJsonl(path.join("data", "normalized", dateFolder(), "hotspots.jsonl"), items);
-}
-
-export async function appendVideoTranscripts(items: VideoTranscriptItem[]): Promise<string> {
-  return appendJsonlUnique(path.join("data", "normalized", dateFolder(), "video-transcripts.jsonl"), items);
 }
 
 export async function appendSocialItems(items: SocialItem[]): Promise<string> {

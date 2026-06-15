@@ -1,22 +1,14 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
-import {
-  bilibiliCookie,
-  bilibiliFollowingLimit,
-  wechatRssFeeds
-} from "../config.js";
+import { wechatRssFeeds } from "../config.js";
 
 export type TaskId =
   | "collect:hotspots"
-  | "collect:subscriptions"
-  | "discover:bilibili-followings"
-  | "collect:subscriptions:followings";
+  | "collect:subscriptions";
 
 export const taskIds: readonly TaskId[] = [
   "collect:hotspots",
-  "collect:subscriptions",
-  "discover:bilibili-followings",
-  "collect:subscriptions:followings"
+  "collect:subscriptions"
 ];
 
 export function isTaskId(value: string | undefined): value is TaskId {
@@ -45,7 +37,6 @@ export type PlannedTask = TaskDefinition & {
 const statePath = path.join("data", "scheduler", "state.json");
 
 export function buildDefaultTasks(): TaskDefinition[] {
-  const hasBilibiliCookie = Boolean(bilibiliCookie);
   return [
     {
       id: "collect:hotspots",
@@ -59,22 +50,6 @@ export function buildDefaultTasks(): TaskDefinition[] {
       intervalMinutes: 60,
       enabled: true,
       params: { wechatFeeds: wechatRssFeeds.join(",") }
-    },
-    {
-      id: "discover:bilibili-followings",
-      description: "Discover followed Bilibili accounts for the configured UID.",
-      intervalMinutes: 360,
-      enabled: hasBilibiliCookie,
-      reason: hasBilibiliCookie ? undefined : "BILIBILI_COOKIE is required.",
-      params: { limit: bilibiliFollowingLimit }
-    },
-    {
-      id: "collect:subscriptions:followings",
-      description: "Collect Bilibili content from followed accounts.",
-      intervalMinutes: 60,
-      enabled: hasBilibiliCookie,
-      reason: hasBilibiliCookie ? undefined : "BILIBILI_COOKIE is required.",
-      params: { limit: bilibiliFollowingLimit }
     }
   ];
 }

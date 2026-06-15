@@ -38,7 +38,7 @@ scripts/          local helper scripts
 skills/           project-specific Codex skills only
 ```
 
-Legacy Bilibili following/subtitle collector files are still present during this migration branch. They are deprecated and should be removed in the next cleanup phase.
+Legacy Bilibili following/subtitle collector files have been removed. Bilibili URL acquisition now belongs to `social-browser-collection`, and video understanding belongs to the external BiliSum fork.
 
 ## External Applications
 
@@ -120,9 +120,9 @@ Material from a link:
 npm.cmd run material:from-link -- --url=https://example.com/article --content-file=E:\path\to\article.md --mode=deepseek
 ```
 
-## Deprecated During Migration
+## Removed During Migration
 
-Do not build new workflows on:
+These legacy built-in Bilibili entries are no longer available:
 
 ```text
 discover:bilibili-followings

@@ -21,7 +21,7 @@ describe("export normalized source items", () => {
       path.join(dayDir, "subscriptions.jsonl"),
       `${JSON.stringify({
         id: "sub1",
-        sourceId: "bilibili-user-video",
+        sourceId: "bilisum-video-note",
         platform: "bilibili",
         provider: "public-api",
         authorId: "289842886",

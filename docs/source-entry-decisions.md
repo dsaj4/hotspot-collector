@@ -22,11 +22,11 @@ Principle: prefer real, verifiable, low-risk source access. Public and RSS-compa
 | Social browser observations | Visible social URLs/items | `social-browser-collection` output | Active |
 | BiliSum | Bilibili video understanding | External BiliSum service | Active integration |
 
-## Deprecated Entries
+## Removed Entries
 
-The old built-in Bilibili dynamic/following/subtitle collection path is deprecated and scheduled for deletion during the structure migration. Future Bilibili acquisition should use visible URL selection through `social-browser-collection`, followed by BiliSum for video understanding.
+The old built-in Bilibili dynamic/following/subtitle collection path has been removed. Future Bilibili acquisition should use visible URL selection through `social-browser-collection`, followed by BiliSum for video understanding.
 
-Deprecated source IDs and commands:
+Removed source IDs and commands:
 
 ```text
 bilibili-user-dynamic
@@ -77,7 +77,7 @@ Bilibili video understanding is routed through external BiliSum:
 E:/Project/hotspot-collector-external/BiliSum
 ```
 
-The target custom branch tries Bilibili platform subtitles, including AI subtitles when available, before falling back to ASR. The full-fidelity note requirement is tracked separately in `docs/requirements/full-fidelity-video-notes.md`.
+The custom BiliSum branch tries Bilibili platform subtitles, including AI subtitles when available, before falling back to ASR. The full-fidelity note requirement is tracked separately in `docs/requirements/full-fidelity-video-notes.md`.
 
 ## X Platform
 

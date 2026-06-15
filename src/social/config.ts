@@ -22,9 +22,7 @@ const defaultSources: BrowserSourceConfig[] = [
     searchKeywords: ["AI"],
     itemLimit: 10,
     fallbackByStream: {
-      subscription: "bilibili-subscriptions",
-      hotspot: "bilibili-hotspots",
-      "home-feed": "bilibili-subscriptions"
+      hotspot: "bilibili-hotspots"
     }
   },
   {

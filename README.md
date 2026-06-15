@@ -32,7 +32,7 @@ It does not own:
 - Runtime data, generated reports, generated notes, screenshots, video/audio downloads, cookies, browser profiles, or logs.
 - Forked upstream applications. BiliSum and WeWe RSS are maintained in separate local Git repositories under `HOTSPOT_EXTERNAL_ROOT`.
 
-The current migration branch still contains legacy Bilibili following/subtitle collector code. The maintained target path is Bilibili URL acquisition through `social-browser-collection`, then video understanding through external BiliSum.
+Legacy Bilibili following/subtitle collector code has been removed from this repository. The maintained path is Bilibili URL acquisition through `social-browser-collection`, then video understanding through external BiliSum.
 
 ## Install
 
@@ -56,7 +56,7 @@ Core roots:
 
 Collection and integration variables:
 
-- `BILIBILI_COOKIE`: optional explicit cookie for allowed Bilibili API paths.
+- `BILIBILI_COOKIE`: optional explicit cookie for BiliSum setup handoff when local access is allowed.
 - `WECHAT_RSS_BASE_URL`: local WeWe RSS URL, default `http://127.0.0.1:4000`.
 - `WECHAT_RSS_FEEDS`: comma-separated WeWe RSS feed ids, default `all`.
 - `WECHAT_RSS_LIMIT`: max articles per WeChat feed, default `30`.
@@ -105,7 +105,7 @@ npm.cmd run report:daily
 
 `collect:wechat` is a compatibility alias for `collect:official-accounts`. Prefer the official-account naming in new docs and automation.
 
-Deprecated migration-era Bilibili commands may still appear in `package.json` until the next cleanup phase. Do not build new workflows on `discover:bilibili-followings`, `collect:subscriptions:followings`, or `collect:bilibili-subtitles`.
+Legacy Bilibili commands `discover:bilibili-followings`, `collect:subscriptions:followings`, and `collect:bilibili-subtitles` have been removed. Use `social-browser-collection` for URL selection and BiliSum for video understanding.
 
 Development checks:
 
@@ -168,7 +168,7 @@ See [docs/operations/external-dependencies.md](docs/operations/external-dependen
 
 ## Bilibili Video Notes
 
-`video:notes-bilibili` calls the external BiliSum service and writes learning packages under the external data root. The target BiliSum fork adds Bilibili platform subtitle acquisition, including AI subtitles when available, before falling back to ASR.
+`video:notes-bilibili` calls the external BiliSum service and writes learning packages under the external data root. The BiliSum fork owns Bilibili platform subtitle acquisition, including AI subtitles when available, before falling back to ASR.
 
 Full-fidelity video notes are a future requirement: preserve the video's argument structure, evidence order, and visual references instead of collapsing everything into a high-level abstract. See [docs/requirements/full-fidelity-video-notes.md](docs/requirements/full-fidelity-video-notes.md).
 

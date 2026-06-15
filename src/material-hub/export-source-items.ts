@@ -1,7 +1,7 @@
 import path from "node:path";
 import { sha1 } from "../core/hash.js";
 import { dateFolder, nowIso } from "../core/time.js";
-import type { HotspotItem, SubscriptionItem, VideoTranscriptItem } from "../types.js";
+import type { HotspotItem, SubscriptionItem } from "../types.js";
 import type { MaterialHubSourceItem, MaterialHubSourceKind } from "./types.js";
 import { fileExists, hubDayPath, latestDatedDir, materialHubRoot, normalizeRelPath, readJsonl, writeJson, writeJsonl } from "./utils.js";
 
@@ -24,7 +24,7 @@ export type ExportSourceItemsResult = {
   };
 };
 
-type NormalizedKind = "subscriptions" | "hotspots" | "video-transcripts";
+type NormalizedKind = "subscriptions" | "hotspots";
 
 type NormalizedSpec = {
   fileName: string;
@@ -34,8 +34,7 @@ type NormalizedSpec = {
 
 const normalizedSpecs: NormalizedSpec[] = [
   { fileName: "subscriptions.jsonl", kind: "subscriptions", sourceKind: "subscription" },
-  { fileName: "hotspots.jsonl", kind: "hotspots", sourceKind: "hotspot" },
-  { fileName: "video-transcripts.jsonl", kind: "video-transcripts", sourceKind: "subscription" }
+  { fileName: "hotspots.jsonl", kind: "hotspots", sourceKind: "hotspot" }
 ];
 
 function normalizedRoot(options: ExportSourceItemsOptions): string {
@@ -83,27 +82,9 @@ function mapHotspot(item: HotspotItem, normalizedRef: string): MaterialHubSource
   };
 }
 
-function mapTranscript(item: VideoTranscriptItem, normalizedRef: string): MaterialHubSourceItem {
-  return {
-    id: `src-transcript-${sha1(item.dedupeKey).slice(0, 12)}`,
-    sourceKind: "subscription",
-    platform: item.platform,
-    provider: item.provider,
-    title: item.title,
-    url: item.url,
-    capturedAt: item.capturedAt,
-    contentText: item.text,
-    summary: `Bilibili subtitle transcript (${item.language}).`,
-    rawRef: item.rawRef,
-    normalizedRef,
-    dedupeKey: item.dedupeKey
-  };
-}
-
-function mapItem(item: SubscriptionItem | HotspotItem | VideoTranscriptItem, spec: NormalizedSpec, normalizedRef: string): MaterialHubSourceItem {
+function mapItem(item: SubscriptionItem | HotspotItem, spec: NormalizedSpec, normalizedRef: string): MaterialHubSourceItem {
   if (spec.kind === "subscriptions") return mapSubscription(item as SubscriptionItem, normalizedRef);
-  if (spec.kind === "hotspots") return mapHotspot(item as HotspotItem, normalizedRef);
-  return mapTranscript(item as VideoTranscriptItem, normalizedRef);
+  return mapHotspot(item as HotspotItem, normalizedRef);
 }
 
 export async function exportNormalizedSourceItems(options: ExportSourceItemsOptions = {}): Promise<ExportSourceItemsResult> {
@@ -117,7 +98,7 @@ export async function exportNormalizedSourceItems(options: ExportSourceItemsOpti
     const abs = path.join(inputDir, spec.fileName);
     if (!(await fileExists(abs))) continue;
     const normalizedRef = path.relative(process.cwd(), abs).replaceAll("\\", "/");
-    const rows = await readJsonl<SubscriptionItem | HotspotItem | VideoTranscriptItem>(abs);
+    const rows = await readJsonl<SubscriptionItem | HotspotItem>(abs);
     inputRefs.push(normalizedRef);
     sourceFiles.push({ ref: normalizedRef, count: rows.length });
     for (const row of rows) {

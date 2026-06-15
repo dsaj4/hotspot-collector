@@ -1,22 +1,10 @@
 import { collectBilibiliPopular } from "../adapters/hotspots/bilibili.js";
 import { collectWeiboHot } from "../adapters/hotspots/weibo.js";
-import { collectBilibiliSubscriptions } from "../adapters/subscriptions/bilibili.js";
-import { bilibiliCookie, bilibiliUid } from "../config.js";
-import { appendHotspots, appendSubscriptions, writeHealth } from "../core/storage.js";
+import { appendHotspots, writeHealth } from "../core/storage.js";
 import type { CollectionResult, SocialFallbackAdapter, SocialStreamType } from "../types.js";
 import { browserSource } from "./config.js";
 
 async function runAdapter(adapter: SocialFallbackAdapter): Promise<CollectionResult> {
-  if (adapter === "bilibili-subscriptions") {
-    const result = await collectBilibiliSubscriptions(bilibiliUid, { cookie: bilibiliCookie });
-    const items = [...result.dynamicItems, ...result.videoItems];
-    return {
-      rawRefs: result.rawRefs,
-      normalizedRefs: [await appendSubscriptions(items), await writeHealth(result.health)],
-      health: result.health,
-      subscriptionCount: items.length
-    };
-  }
   if (adapter === "bilibili-hotspots" || adapter === "weibo-hotspots") {
     const result = adapter === "bilibili-hotspots" ? await collectBilibiliPopular() : await collectWeiboHot();
     return {

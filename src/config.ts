@@ -5,9 +5,7 @@ import { dataPath, dataRoot, externalPath, externalRoot } from "./core/paths.js"
 
 const bilisumLocalConfig = readBiliSumLocalConfig();
 
-export const bilibiliUid = "289842886";
 export const bilibiliCookie = process.env.BILIBILI_COOKIE ?? "";
-export const bilibiliFollowingLimit = parseIntegerEnv(process.env.BILIBILI_FOLLOWING_LIMIT, 20, { min: 1, max: 200 });
 export const wechatRssBaseUrl = process.env.WECHAT_RSS_BASE_URL ?? "http://127.0.0.1:4000";
 export const wechatRssFeeds = parseCsvEnv(process.env.WECHAT_RSS_FEEDS, "all");
 export const wechatRssLimit = parseIntegerEnv(process.env.WECHAT_RSS_LIMIT, 30, { min: 1, max: 200 });
@@ -34,28 +32,6 @@ export const bilisumPollIntervalMs = parseIntegerEnv(process.env.BILISUM_POLL_IN
 export const bilisumVisualNoteMode = process.env.BILISUM_VISUAL_NOTE_MODE ?? "frame_insert";
 
 export const subscriptionSources: SourceConfig[] = [
-  {
-    id: "bilibili-user-dynamic",
-    kind: "subscription",
-    platform: "bilibili",
-    name: "Bilibili user dynamic",
-    enabled: true,
-    intervalMinutes: 30,
-    fetchMode: "public-api",
-    params: { uid: bilibiliUid },
-    policy: { requiresLogin: false, usesCookie: false, usesBrowserSession: false, publicOnly: true, enabledByDefault: true }
-  },
-  {
-    id: "bilibili-user-video",
-    kind: "subscription",
-    platform: "bilibili",
-    name: "Bilibili user video",
-    enabled: true,
-    intervalMinutes: 30,
-    fetchMode: "public-api",
-    params: { uid: bilibiliUid },
-    policy: { requiresLogin: false, usesCookie: false, usesBrowserSession: false, publicOnly: true, enabledByDefault: true }
-  },
   {
     id: "wechat-rss",
     kind: "subscription",

@@ -14,7 +14,6 @@ export type RunMaterialPipelineOptions = {
   collect?: MaterialPipelineCollectMode;
   day?: string;
   limit?: number;
-  subtitleLimit?: number;
 };
 
 export type RunMaterialPipelineResult = {
@@ -23,13 +22,12 @@ export type RunMaterialPipelineResult = {
   collection: {
     subscriptions?: CollectionResult;
     hotspots?: CollectionResult;
-    bilibiliSubtitles?: CollectionResult;
   };
   sourceExport: ExportSourceItemsResult;
   processing: ProcessMaterialsResult;
 };
 
-async function runCollection(mode: MaterialPipelineCollectMode, subtitleLimit?: number): Promise<RunMaterialPipelineResult["collection"]> {
+async function runCollection(mode: MaterialPipelineCollectMode): Promise<RunMaterialPipelineResult["collection"]> {
   if (mode === "skip") return {};
   if (mode === "hotspots") {
     const { collectHotspots } = await import("../collectors/hotspots.js");
@@ -42,11 +40,9 @@ async function runCollection(mode: MaterialPipelineCollectMode, subtitleLimit?: 
 
   const { collectSubscriptions } = await import("../collectors/subscriptions.js");
   const { collectHotspots } = await import("../collectors/hotspots.js");
-  const { collectBilibiliSubtitlesFromLatest } = await import("../collectors/bilibili-subtitles.js");
   const subscriptions = await collectSubscriptions();
   const hotspots = await collectHotspots();
-  const bilibiliSubtitles = await collectBilibiliSubtitlesFromLatest({ limit: subtitleLimit });
-  return { subscriptions, hotspots, bilibiliSubtitles };
+  return { subscriptions, hotspots };
 }
 
 async function existingSourceItemsSummary(day?: string): Promise<ExportSourceItemsResult> {
@@ -70,7 +66,7 @@ async function existingSourceItemsSummary(day?: string): Promise<ExportSourceIte
 
 export async function runMaterialPipeline(options: RunMaterialPipelineOptions = {}): Promise<RunMaterialPipelineResult> {
   const collectMode = options.collect ?? "skip";
-  const collection = await runCollection(collectMode, options.subtitleLimit);
+  const collection = await runCollection(collectMode);
   const sourceExport = collectMode === "skip" ? await existingSourceItemsSummary(options.day) : await exportNormalizedSourceItems({ day: options.day });
   const processing = await processMaterialRecords({ day: sourceExport.day, limit: options.limit });
   return {

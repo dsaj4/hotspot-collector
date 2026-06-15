@@ -1,25 +1,6 @@
 {
   "sources": [
     {
-      "id": "bilibili-user-dynamic",
-      "kind": "subscription",
-      "platform": "bilibili",
-      "name": "Bilibili user dynamic",
-      "enabled": true,
-      "intervalMinutes": 30,
-      "fetchMode": "public-api",
-      "params": {
-        "uid": "289842886"
-      },
-      "policy": {
-        "requiresLogin": false,
-        "usesCookie": false,
-        "usesBrowserSession": false,
-        "publicOnly": true,
-        "enabledByDefault": true
-      }
-    },
-    {
       "id": "x-browser-example",
       "kind": "subscription",
       "platform": "x",

@@ -1,17 +1,11 @@
-import path from "node:path";
 import {
-  bilibiliCookie,
-  bilibiliFollowingLimit,
-  bilibiliUid,
   genericRssLimit,
   rsshubBaseUrl,
   wechatRssBaseUrl,
   wechatRssFeeds,
   wechatRssLimit
 } from "../config.js";
-import { appendJsonl, appendSubscriptions, writeHealth } from "../core/storage.js";
-import { dateFolder } from "../core/time.js";
-import { collectBilibiliFollowings, collectBilibiliSubscriptions } from "../adapters/subscriptions/bilibili.js";
+import { appendSubscriptions, writeHealth } from "../core/storage.js";
 import { collectDirectRssSubscription } from "../adapters/subscriptions/rss.js";
 import { collectRsshubSubscription } from "../adapters/subscriptions/rsshub.js";
 import { collectWechatRssSubscriptions } from "../adapters/subscriptions/wechat-rss.js";
@@ -28,7 +22,7 @@ function uniqueByDedupeKey(items: SubscriptionItem[]): SubscriptionItem[] {
 }
 
 function additionalSubscriptionSources(): SourceConfig[] {
-  const builtInSourceIds = new Set(["bilibili-user-dynamic", "bilibili-user-video", "wechat-rss"]);
+  const builtInSourceIds = new Set(["wechat-rss"]);
   return loadSourceCatalog().filter(
     (source) =>
       source.kind === "subscription" &&
@@ -76,18 +70,6 @@ export async function collectSubscriptions(): Promise<CollectionResult> {
   };
 }
 
-export async function discoverBilibiliFollowings(): Promise<CollectionResult & { followingCount: number }> {
-  const result = await collectBilibiliFollowings(bilibiliUid, bilibiliCookie, bilibiliFollowingLimit);
-  const normalizedRef = await appendJsonl(path.join("data", "normalized", dateFolder(), "bilibili-followings.jsonl"), result.users);
-  const healthRef = await writeHealth(result.health, ["bilibili-followings"]);
-  return {
-    rawRefs: result.rawRefs,
-    normalizedRefs: [normalizedRef, healthRef],
-    health: result.health,
-    followingCount: result.users.length
-  };
-}
-
 export async function collectOfficialAccountSubscriptions(): Promise<CollectionResult> {
   const result = await collectWechatRssSubscriptions(wechatRssBaseUrl, wechatRssFeeds, wechatRssLimit);
   const normalizedRef = await appendSubscriptions(uniqueByDedupeKey(result.items));
@@ -101,31 +83,3 @@ export async function collectOfficialAccountSubscriptions(): Promise<CollectionR
 }
 
 export const collectWechatSubscriptions = collectOfficialAccountSubscriptions;
-
-export async function collectFollowingSubscriptions(): Promise<CollectionResult & { followingCount: number }> {
-  const followings = await collectBilibiliFollowings(bilibiliUid, bilibiliCookie, bilibiliFollowingLimit);
-  const results = [];
-  for (const user of followings.users) {
-    results.push(
-      await collectBilibiliSubscriptions(user.uid, {
-        cookie: bilibiliCookie,
-        dynamicSourceId: `bilibili-following-dynamic-${user.uid}`,
-        videoSourceId: `bilibili-following-video-${user.uid}`
-      })
-    );
-  }
-  const items = uniqueByDedupeKey(results.flatMap((result) => [...result.dynamicItems, ...result.videoItems]));
-  const normalizedRef = await appendSubscriptions(items);
-  const health = [...followings.health, ...results.flatMap((result) => result.health)];
-  const healthRef = await writeHealth(health, [
-    "bilibili-followings",
-    ...followings.users.flatMap((user) => [`bilibili-following-dynamic-${user.uid}`, `bilibili-following-video-${user.uid}`])
-  ]);
-  return {
-    rawRefs: [...followings.rawRefs, ...results.flatMap((result) => result.rawRefs)],
-    normalizedRefs: [normalizedRef, healthRef],
-    health,
-    subscriptionCount: items.length,
-    followingCount: followings.users.length
-  };
-}

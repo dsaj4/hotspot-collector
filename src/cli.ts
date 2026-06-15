@@ -1,10 +1,7 @@
 type Command =
   | "collect:subscriptions"
-  | "discover:bilibili-followings"
-  | "collect:subscriptions:followings"
   | "collect:official-accounts"
   | "collect:wechat"
-  | "collect:bilibili-subtitles"
   | "video:intake-bilibili"
   | "video:notes-bilibili"
   | "video:notes-bilibili-list"
@@ -83,27 +80,9 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (command === "discover:bilibili-followings") {
-    const { discoverBilibiliFollowings } = await import("./collectors/subscriptions.js");
-    printJson(await discoverBilibiliFollowings());
-    return;
-  }
-
-  if (command === "collect:subscriptions:followings") {
-    const { collectFollowingSubscriptions } = await import("./collectors/subscriptions.js");
-    printJson(await collectFollowingSubscriptions());
-    return;
-  }
-
   if (command === "collect:official-accounts" || command === "collect:wechat") {
     const { collectOfficialAccountSubscriptions } = await import("./collectors/subscriptions.js");
     printJson(await collectOfficialAccountSubscriptions());
-    return;
-  }
-
-  if (command === "collect:bilibili-subtitles") {
-    const { collectBilibiliSubtitlesFromLatest } = await import("./collectors/bilibili-subtitles.js");
-    printJson(await collectBilibiliSubtitlesFromLatest({ limit: parsePositiveIntegerOption(readOption("max-items")) }));
     return;
   }
 
@@ -178,11 +157,9 @@ async function main(): Promise<void> {
   if (command === "collect:all") {
     const { collectSubscriptions } = await import("./collectors/subscriptions.js");
     const { collectHotspots } = await import("./collectors/hotspots.js");
-    const { collectBilibiliSubtitlesFromLatest } = await import("./collectors/bilibili-subtitles.js");
     const subscriptions = await collectSubscriptions();
     const hotspots = await collectHotspots();
-    const bilibiliSubtitles = await collectBilibiliSubtitlesFromLatest();
-    printJson({ subscriptions, hotspots, bilibiliSubtitles });
+    printJson({ subscriptions, hotspots });
     return;
   }
 
@@ -377,8 +354,7 @@ async function main(): Promise<void> {
       await runMaterialPipeline({
         collect: readCollectMode(readOption("collect")),
         day: readOption("day"),
-        limit: parsePositiveIntegerOption(readOption("limit")),
-        subtitleLimit: parsePositiveIntegerOption(readOption("subtitle-limit"))
+        limit: parsePositiveIntegerOption(readOption("limit"))
       })
     );
     return;

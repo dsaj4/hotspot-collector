@@ -127,7 +127,6 @@ Credentialed collection is opt-in:
 
 ## Next Steps
 
-1. Remove deprecated Bilibili dynamic/following/subtitle collectors from this repository.
-2. Reorganize source and tests by functional domain after the deprecated path is removed.
-3. Run a real BiliSum smoke test against `BV1tfoNBqEtN` after confirming port `3838` is served by the external BiliSum fork.
-4. Push the final migration branch after `npm.cmd run check` passes.
+1. Reorganize source and tests by functional domain after the deprecated path is removed.
+2. Run a real BiliSum smoke test against `BV1tfoNBqEtN` after confirming port `3838` is served by the external BiliSum fork.
+3. Push the final migration branch after `npm.cmd run check` passes.
