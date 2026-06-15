@@ -86,11 +86,12 @@ Completed:
 
 Still in progress:
 
-- Real smoke test with `BV1tfoNBqEtN`.
+- Real BiliSum note generation is blocked by Bilibili HTTP 412 risk control for `BV1tfoNBqEtN`; retry after restoring an allowed Bilibili login/network state.
 
-Known caution:
+Known smoke-test result:
 
-- A local service may already be listening on BiliSum port `3838`. Confirm it is running from `E:/Project/hotspot-collector-external/BiliSum`, not the old `.tmp-bilisum-analysis` runtime, before treating a video-note smoke test as valid.
+- BiliSum service was restarted from `E:/Project/hotspot-collector-external/BiliSum`; `video:bilisum-status` reported `runtimePython` as `E:/Project/hotspot-collector-external/BiliSum/.venv/Scripts/python.exe`.
+- `npm.cmd run video:notes-bilibili -- --url=https://www.bilibili.com/video/BV1tfoNBqEtN` reached BiliSum but failed with Bilibili HTTP 412 risk control. This does not contradict the structural migration, but it means the real video-note smoke test is not functionally complete yet.
 
 Removed entries:
 

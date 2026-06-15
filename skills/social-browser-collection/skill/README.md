@@ -122,12 +122,6 @@ Run the local project checks after changing this skill:
 npm.cmd run check
 ```
 
-Run the Luban structure check from Git Bash:
-
-```text
-C:\Program Files\Git\bin\bash.exe -lc "cd /e/Project/hotspot-collector && bash skill-workspaces/luban-skill-evaluation/upstream/skills/luban/tools/check-skill-repo.sh skills/social-browser-collection/skill"
-```
-
 Expected behavior:
 
 - README and examples are present.

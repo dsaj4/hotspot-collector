@@ -38,6 +38,14 @@ E:/Project/hotspot-collector-external/BiliSum
 
 If it resolves under an old temporary analysis directory, restart BiliSum from the external fork before running video-note smoke tests.
 
+Latest migration note:
+
+```text
+2026-06-15: BiliSum was restarted from E:/Project/hotspot-collector-external/BiliSum.
+Runtime path verified as E:/Project/hotspot-collector-external/BiliSum/.venv/Scripts/python.exe.
+The BV1tfoNBqEtN smoke command reached BiliSum but Bilibili returned HTTP 412 risk control.
+```
+
 ## BiliSum Video Notes
 
 Allowed smoke URL:
