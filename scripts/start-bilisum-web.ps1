@@ -2,7 +2,8 @@ $ErrorActionPreference = "Stop"
 
 $repo = "E:\Project\hotspot-collector"
 $url = "http://127.0.0.1:3838/"
-$profileDir = Join-Path $repo "data\sessions\bilisum-web\profile"
+$dataRoot = if ([string]::IsNullOrWhiteSpace($env:HOTSPOT_DATA_ROOT)) { "E:\Project\hotspot-collector-data" } else { $env:HOTSPOT_DATA_ROOT }
+$profileDir = Join-Path $dataRoot "sessions\bilisum-web\profile"
 $debugPort = 9383
 
 function Test-BiliSumHealth {
@@ -15,7 +16,7 @@ function Test-BiliSumHealth {
 }
 
 function Get-BiliSumAccessToken {
-  $configPath = Join-Path $repo "data\secrets\bilisum.json"
+  $configPath = Join-Path $dataRoot "secrets\bilisum.json"
   if (-not (Test-Path $configPath)) {
     throw "BiliSum local config not found: $configPath"
   }

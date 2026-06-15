@@ -1,7 +1,7 @@
 import type { SourceConfig } from "./types.js";
 import { parseCsvEnv, parseIntegerEnv } from "./core/env.js";
 import { readBiliSumLocalConfig } from "./video-intake/local-config.js";
-import { dataRoot, externalRoot } from "./core/paths.js";
+import { dataPath, dataRoot, externalPath, externalRoot } from "./core/paths.js";
 
 const bilisumLocalConfig = readBiliSumLocalConfig();
 
@@ -15,9 +15,9 @@ export const rsshubBaseUrl = process.env.RSSHUB_BASE_URL ?? "";
 export const genericRssLimit = parseIntegerEnv(process.env.GENERIC_RSS_LIMIT, 30, { min: 1, max: 200 });
 export const hotspotDataRoot = dataRoot();
 export const hotspotExternalRoot = externalRoot();
-export const bilisumProjectRoot = process.env.BILISUM_PROJECT_ROOT ?? "";
-export const bilisumAppDataRoot = process.env.BILISUM_APP_DATA_ROOT ?? bilisumLocalConfig.appDataRoot ?? "";
-export const weweRssProjectRoot = process.env.WEWE_RSS_PROJECT_ROOT ?? "";
+export const bilisumProjectRoot = process.env.BILISUM_PROJECT_ROOT ?? bilisumLocalConfig.projectRoot ?? externalPath("BiliSum");
+export const bilisumAppDataRoot = process.env.BILISUM_APP_DATA_ROOT ?? bilisumLocalConfig.appDataRoot ?? dataPath("bilisum");
+export const weweRssProjectRoot = process.env.WEWE_RSS_PROJECT_ROOT ?? externalPath("wewe-rss");
 export const visionLibRoot = process.env.VISION_LIB_ROOT ?? "E:/Project/vision-lib";
 export const contentSystemApiBase = process.env.CONTENT_SYSTEM_API_BASE ?? "http://127.0.0.1:8787";
 export const contentSystemLoginAccount = process.env.CONTENT_SYSTEM_ACCOUNT ?? "thinking-lab";

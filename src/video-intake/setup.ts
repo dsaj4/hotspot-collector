@@ -3,8 +3,9 @@ import { spawn } from "node:child_process";
 import { access, appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
-import { bilibiliCookie, deepseekApiKey, deepseekBaseUrl, deepseekModel } from "../config.js";
+import { bilibiliCookie, bilisumAppDataRoot, bilisumProjectRoot, deepseekApiKey, deepseekBaseUrl, deepseekModel } from "../config.js";
 import { getSecret } from "../core/secrets.js";
+import { dataPath, externalPath } from "../core/paths.js";
 import { bilisumLocalConfigPath, readBiliSumLocalConfig, type BiliSumLocalConfig } from "./local-config.js";
 import { exportBilibiliCdpCookies } from "./bilibili-cookie-bridge.js";
 
@@ -27,11 +28,13 @@ export type BiliSumSetupResult = {
   configRef: string;
 };
 
-const defaultCandidates = [
-  "E:/Project/BiliSum",
-  "E:/Project/bilisum",
-  "E:/Project/vision-lib/.tmp-bilisum-analysis"
-];
+function defaultCandidates(): string[] {
+  return [
+    externalPath("BiliSum"),
+    "E:/Project/BiliSum",
+    "E:/Project/bilisum"
+  ];
+}
 
 async function exists(filePath: string): Promise<boolean> {
   try {
@@ -43,7 +46,7 @@ async function exists(filePath: string): Promise<boolean> {
 }
 
 async function findBiliSumProject(explicit?: string): Promise<string> {
-  const candidates = [explicit, process.env.BILISUM_PROJECT_ROOT, ...defaultCandidates].filter((item): item is string => Boolean(item));
+  const candidates = [explicit, process.env.BILISUM_PROJECT_ROOT, ...defaultCandidates()].filter((item): item is string => Boolean(item));
   for (const candidate of candidates) {
     const root = path.resolve(candidate);
     if ((await exists(path.join(root, "pyproject.toml"))) && (await exists(path.join(root, "apps", "service", "src", "video_sum_service", "main.py")))) {
@@ -125,7 +128,7 @@ export async function setupBiliSum(options: SetupOptions = {}): Promise<BiliSumS
   const projectRoot = await findBiliSumProject(options.projectRoot);
   const existing = readBiliSumLocalConfig();
   const accessToken = existing.accessToken || randomBytes(32).toString("base64url");
-  const appDataRoot = existing.appDataRoot || path.join(process.cwd(), "data", "bilisum");
+  const appDataRoot = process.env.BILISUM_APP_DATA_ROOT || existing.appDataRoot || dataPath("bilisum");
   const baseUrl = options.baseUrl || existing.baseUrl || "http://127.0.0.1:3838";
   const warnings: string[] = [];
   const ffmpegDir = await findFfmpegDir();
@@ -181,9 +184,9 @@ export async function bilisumSetupStatus(): Promise<Record<string, unknown>> {
   const baseUrl = config.baseUrl ?? "http://127.0.0.1:3838";
   return {
     configured: Boolean(config.projectRoot && config.accessToken),
-    projectRoot: config.projectRoot,
+    projectRoot: config.projectRoot ?? bilisumProjectRoot,
     baseUrl,
-    appDataRoot: config.appDataRoot,
+    appDataRoot: config.appDataRoot ?? bilisumAppDataRoot,
     accessTokenConfigured: Boolean(config.accessToken),
     serviceHealth: await health(baseUrl)
   };
