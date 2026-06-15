@@ -43,6 +43,26 @@ function printJson(value: unknown): void {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
+function printText(value: string): void {
+  process.stdout.write(`${value.trimEnd()}\n`);
+}
+
+function isHelpRequested(): boolean {
+  return process.argv.includes("--help") || process.argv.includes("-h");
+}
+
+function printOfficialAccountsHelp(command: "collect:official-accounts" | "collect:wechat"): void {
+  printText(`
+Usage: npm.cmd run ${command}
+
+Collect official-account subscriptions from the configured local WeWe RSS service.
+
+The command writes raw snapshots, normalized subscription records, and source health
+under HOTSPOT_DATA_ROOT. If the local WeWe RSS service is unavailable, it exits
+cleanly with source health marked unavailable and emits no fake articles.
+`);
+}
+
 function readOption(name: string): string | undefined {
   const prefix = `--${name}=`;
   const match = process.argv.find((arg) => arg.startsWith(prefix));
@@ -81,6 +101,10 @@ async function main(): Promise<void> {
   }
 
   if (command === "collect:official-accounts" || command === "collect:wechat") {
+    if (isHelpRequested()) {
+      printOfficialAccountsHelp(command);
+      return;
+    }
     const { collectOfficialAccountSubscriptions } = await import("../collection/subscriptions/collect.js");
     printJson(await collectOfficialAccountSubscriptions());
     return;
