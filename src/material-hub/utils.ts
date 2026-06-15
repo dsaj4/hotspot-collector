@@ -1,16 +1,16 @@
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { visionLibRoot } from "../config.js";
+import { materialWorkspaceRoot } from "../config.js";
 import { dateFolder, safeTimestamp } from "../core/time.js";
 
-export const materialHubRoot = path.join(visionLibRoot, "material-hub-workspace");
+export const materialHubRoot = path.join(materialWorkspaceRoot, "material-hub-workspace");
 
 export function normalizeRelPath(filePath: string): string {
   return filePath.replaceAll("\\", "/");
 }
 
-export function relFromVisionLib(absPath: string): string {
-  return normalizeRelPath(path.relative(visionLibRoot, absPath));
+export function relFromMaterialWorkspace(absPath: string): string {
+  return normalizeRelPath(path.relative(materialWorkspaceRoot, absPath));
 }
 
 export async function ensureDir(dir: string): Promise<void> {
@@ -20,20 +20,20 @@ export async function ensureDir(dir: string): Promise<void> {
 export async function writeJson(absPath: string, value: unknown): Promise<string> {
   await ensureDir(path.dirname(absPath));
   await writeFile(absPath, JSON.stringify(value, null, 2), "utf8");
-  return relFromVisionLib(absPath);
+  return relFromMaterialWorkspace(absPath);
 }
 
 export async function writeText(absPath: string, value: string): Promise<string> {
   await ensureDir(path.dirname(absPath));
   await writeFile(absPath, value, "utf8");
-  return relFromVisionLib(absPath);
+  return relFromMaterialWorkspace(absPath);
 }
 
 export async function writeJsonl(absPath: string, values: unknown[]): Promise<string> {
   await ensureDir(path.dirname(absPath));
   const body = values.map((value) => JSON.stringify(value)).join("\n");
   await writeFile(absPath, body ? `${body}\n` : "", "utf8");
-  return relFromVisionLib(absPath);
+  return relFromMaterialWorkspace(absPath);
 }
 
 export async function readJsonl<T>(absPath: string): Promise<T[]> {

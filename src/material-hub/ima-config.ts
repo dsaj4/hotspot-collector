@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { imaOpenapiApiKey, imaOpenapiClientId, materialHubImaKnowledgeBaseId, visionLibRoot } from "../config.js";
+import { imaOpenapiApiKey, imaOpenapiClientId, materialHubImaKnowledgeBaseId } from "../config.js";
+import { materialHubRoot } from "./utils.js";
 
 export type MaterialHubImaConfig = {
   knowledgeBaseId: string;
@@ -24,7 +25,7 @@ function readTrimmedFile(file: string): string {
 }
 
 function readLocalKnowledgeBaseId(): string {
-  const localPath = path.join(visionLibRoot, "material-hub-workspace", "config", "ima.local.json");
+  const localPath = path.join(materialHubRoot, "config", "ima.local.json");
   if (!existsSync(localPath)) return "";
   const parsed = JSON.parse(readFileSync(localPath, "utf8")) as LocalImaConfig;
   return typeof parsed.knowledgeBaseId === "string" ? parsed.knowledgeBaseId.trim() : "";

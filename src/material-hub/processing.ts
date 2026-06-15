@@ -38,7 +38,7 @@ async function readSourceItems(options: ProcessMaterialsOptions): Promise<{ day:
 
 export function classifySourceItem(item: MaterialHubSourceItem): MaterialType {
   const text = `${item.title} ${item.summary ?? ""} ${item.url}`.toLowerCase();
-  if (item.platform === "local" || item.url.startsWith("file:") || item.url.includes("vision-lib")) return "project_doc";
+  if (item.platform === "local" || item.url.startsWith("file:") || item.url.includes("material-hub-workspace") || item.url.includes("hotspot-collector-data")) return "project_doc";
   if (item.sourceKind === "hotspot") return "news_brief";
   if (item.contentText && item.contentText.length > 1000) return "deep_article";
   if (/(article|post|mp.weixin|newsletter|report|pdf|research)/i.test(text)) return "deep_article";

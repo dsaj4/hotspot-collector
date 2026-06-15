@@ -5,7 +5,7 @@ description: Turn a link or collected source into source items, single-source Di
 
 # Material Hub Pipeline
 
-Work from `E:\Project\hotspot-collector`. Write material artifacts to `E:\Project\vision-lib\material-hub-workspace`.
+Work from `E:\Project\hotspot-collector`. Write material artifacts to `HOTSPOT_DATA_ROOT\material-hub-workspace`, or to `MATERIAL_WORKSPACE_ROOT\material-hub-workspace` when explicitly overridden.
 
 ## Route
 

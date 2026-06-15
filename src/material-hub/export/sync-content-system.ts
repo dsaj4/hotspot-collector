@@ -1,6 +1,7 @@
 ﻿import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { contentSystemApiBase, contentSystemLoginAccount, visionLibRoot } from "../../config.js";
+import { contentSystemApiBase, contentSystemLoginAccount, materialWorkspaceRoot } from "../../config.js";
+import { artifactPath } from "../../core/paths.js";
 
 type SyncPackage = {
   packageId: string;
@@ -17,7 +18,7 @@ type SyncResult = {
   skipped: string[];
 };
 
-const syncHistoryPath = path.join(process.cwd(), "data", "sync-history", "content-system-assets.json");
+const syncHistoryPath = artifactPath(path.join("data", "sync-history", "content-system-assets.json"));
 
 async function readSyncHistory(): Promise<Record<string, { lastSyncedAt: string; packageRef: string }>> {
   try {
@@ -49,7 +50,7 @@ async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
 }
 
 async function latestSyncPackageRef(): Promise<string> {
-  const root = path.join(visionLibRoot, "trend-intake-workspace", "04-sync-packages");
+  const root = path.join(materialWorkspaceRoot, "trend-intake-workspace", "04-sync-packages");
   const { readdir, stat } = await import("node:fs/promises");
   const days = (await readdir(root, { withFileTypes: true }))
     .filter((entry) => entry.isDirectory())
@@ -63,14 +64,14 @@ async function latestSyncPackageRef(): Promise<string> {
       .map((file) => path.join(dir, file));
     const ranked = await Promise.all(files.map(async (file) => ({ file, mtime: (await stat(file)).mtimeMs })));
     const latest = ranked.sort((a, b) => b.mtime - a.mtime)[0];
-    if (latest) return path.relative(visionLibRoot, latest.file).replaceAll("\\", "/");
+    if (latest) return path.relative(materialWorkspaceRoot, latest.file).replaceAll("\\", "/");
   }
   throw new Error("No sync package found.");
 }
 
 export async function syncLatestContentSystemAssets(packageRef?: string): Promise<SyncResult> {
   const resolvedPackageRef = packageRef ?? (await latestSyncPackageRef());
-  const packageAbs = path.join(visionLibRoot, resolvedPackageRef);
+  const packageAbs = path.join(materialWorkspaceRoot, resolvedPackageRef);
   const syncPackage = JSON.parse(await readFile(packageAbs, "utf8")) as SyncPackage;
   if (syncPackage.target !== "content-system.assets") {
     throw new Error(`Unsupported sync target: ${syncPackage.target}`);

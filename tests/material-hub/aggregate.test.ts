@@ -10,7 +10,7 @@ function item(id: string, sourceKind: MaterialHubSourceItem["sourceKind"], platf
     platform,
     provider: platform === "local" ? "official-doc" : "public-api",
     title,
-    url: platform === "local" ? `file:///E:/Project/vision-lib/${id}.md` : `https://example.com/${id}`,
+    url: platform === "local" ? `file:///E:/Project/hotspot-collector-data/material-hub-workspace/${id}.md` : `https://example.com/${id}`,
     capturedAt: "2026-06-08T00:00:00.000Z",
     summary,
     rawRef: `raw/${id}.json`,

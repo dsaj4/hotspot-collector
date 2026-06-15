@@ -1,6 +1,7 @@
 ﻿import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { cdpCommand, findCdpPage } from "../../core/cdp.js";
+import { artifactPath } from "../../core/paths.js";
 
 type BrowserSession = {
   configured?: boolean;
@@ -34,7 +35,7 @@ function netscapeLine(cookie: CdpCookie): string {
 }
 
 export async function exportBilibiliCdpCookies(appDataRoot: string): Promise<{ cookieFile?: string; warning?: string }> {
-  const sessionFile = path.join(process.cwd(), "data", "sessions", "bilibili", "session.json");
+  const sessionFile = artifactPath(path.join("data", "sessions", "bilibili", "session.json"));
   let session: BrowserSession;
   try {
     session = JSON.parse(await readFile(sessionFile, "utf8")) as BrowserSession;

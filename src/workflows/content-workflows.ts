@@ -1,6 +1,6 @@
 ﻿import path from "node:path";
 import { readFile } from "node:fs/promises";
-import { visionLibRoot } from "../config.js";
+import { materialWorkspaceRoot } from "../config.js";
 import type { MaterialHubSourceItem, MaterialHubSourceKind, ProcessingTemplate } from "../material-hub/types.js";
 import { aggregateMaterialCards } from "../material-hub/aggregate.js";
 import { digestSources } from "../material-hub/digest.js";
@@ -11,8 +11,8 @@ import { intakeBilibiliVideo } from "../video-notes/bilibili.js";
 
 export type WorkflowStage = "collect" | "digest" | "material";
 
-function absoluteVisionRef(ref: string): string {
-  return path.isAbsolute(ref) ? ref : path.join(visionLibRoot, ref);
+function absoluteMaterialRef(ref: string): string {
+  return path.isAbsolute(ref) ? ref : path.join(materialWorkspaceRoot, ref);
 }
 
 async function collectKind(kind: Exclude<MaterialHubSourceKind, "temporary-link" | "ima">): Promise<unknown> {
@@ -48,7 +48,7 @@ export async function runCollectionContentWorkflow(options: {
   const aggregate = await aggregateMaterialCards({
     day: sourceExport.day,
     limit: options.limit,
-    digestPath: absoluteVisionRef(digest.digestRef),
+    digestPath: absoluteMaterialRef(digest.digestRef),
     template: options.template,
     mode: options.mode
   });
@@ -57,7 +57,7 @@ export async function runCollectionContentWorkflow(options: {
 
 async function isolatedSourceSet(day: string, label: string, items: MaterialHubSourceItem[]): Promise<string> {
   const ref = await writeJsonl(hubDayPath("02-processing-jobs", day, `source-set-${label}.jsonl`), items);
-  return absoluteVisionRef(ref);
+  return absoluteMaterialRef(ref);
 }
 
 export async function createMaterialFromLink(options: {
@@ -92,7 +92,7 @@ export async function createMaterialFromLink(options: {
   const aggregate = await aggregateMaterialCards({
     day,
     limit: options.limit ?? 1,
-    digestPath: absoluteVisionRef(digest.digestRef),
+    digestPath: absoluteMaterialRef(digest.digestRef),
     template: options.template,
     mode: options.mode
   });

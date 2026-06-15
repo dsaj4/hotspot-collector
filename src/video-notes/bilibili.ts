@@ -1,6 +1,7 @@
 import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { bilisumAccessToken, bilisumBaseUrl, bilisumPollIntervalMs, bilisumTaskTimeoutMs, bilisumVisualNoteMode } from "../config.js";
+import { artifactPath } from "../core/paths.js";
 import { appendJsonlUnique } from "../core/storage.js";
 import { sha1 } from "../core/hash.js";
 import { dateFolder, nowIso } from "../core/time.js";
@@ -109,7 +110,7 @@ export function extractBilibiliVideoId(url: string): string | null {
 }
 
 async function latestNormalizedFile(fileName: string): Promise<string | null> {
-  const dir = path.join(process.cwd(), "data", "normalized");
+  const dir = artifactPath(path.join("data", "normalized"));
   let dates: string[] = [];
   try {
     dates = (await readdir(dir, { withFileTypes: true })).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort().reverse();
@@ -460,7 +461,7 @@ async function appendMaterialSourceItem(day: string, item: MaterialHubSourceItem
 
 async function writeVideoProcessingResult(day: string, result: VideoProcessingResult): Promise<string> {
   const rel = path.join("data", "video-intake", day, `bilibili-${sha1(`${result.source.url}:${nowIso()}`).slice(0, 12)}.json`);
-  const abs = path.join(process.cwd(), rel);
+  const abs = artifactPath(rel);
   await mkdir(path.dirname(abs), { recursive: true });
   await writeFile(abs, JSON.stringify(result, null, 2), "utf8");
   return normalizeRelPath(rel);
@@ -515,7 +516,7 @@ async function writeLearningPackageManifest(day: string, result: VideoProcessing
   }
   const openableRefs = [...new Set([path.resolve(videoResultRef), ...existingExpected, ...directArtifacts])];
   const rel = path.join("data", "video-notes", day, `bilibili-${result.source.videoId ?? sha1(result.source.url).slice(0, 12)}-learning-package.json`);
-  const abs = path.join(process.cwd(), rel);
+  const abs = artifactPath(rel);
   await mkdir(path.dirname(abs), { recursive: true });
   await writeFile(abs, JSON.stringify({
     generatedAt: nowIso(),
@@ -667,7 +668,7 @@ export async function intakeBilibiliVideoList(options: IntakeBilibiliVideoListOp
     }));
   }
   const rel = path.join("data", "video-notes", day, `bilibili-batch-${sha1(`${options.inputPath}:${nowIso()}`).slice(0, 12)}-learning-package-index.json`);
-  const abs = path.join(process.cwd(), rel);
+  const abs = artifactPath(rel);
   const result: IntakeBilibiliVideoListResult = {
     day,
     inputPath: path.resolve(options.inputPath),

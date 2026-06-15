@@ -1,7 +1,8 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { visionLibRoot } from "../../config.js";
+import { materialWorkspaceRoot } from "../../config.js";
 import { sha1 } from "../../core/hash.js";
+import { artifactPath } from "../../core/paths.js";
 import { dateFolder, safeTimestamp } from "../../core/time.js";
 import type { CandidateAsset, HotspotItem } from "../../types.js";
 
@@ -13,10 +14,8 @@ type MaterialGenerationResult = {
   readyForContentSystemCount: number;
 };
 
-const projectRoot = process.cwd();
-
-function relFromVisionLib(abs: string): string {
-  return path.relative(visionLibRoot, abs).replaceAll("\\", "/");
+function relFromMaterialWorkspace(abs: string): string {
+  return path.relative(materialWorkspaceRoot, abs).replaceAll("\\", "/");
 }
 
 async function ensureDir(dir: string): Promise<void> {
@@ -24,7 +23,7 @@ async function ensureDir(dir: string): Promise<void> {
 }
 
 async function readHotspots(): Promise<HotspotItem[]> {
-  const file = path.join(projectRoot, "data", "normalized", dateFolder(), "hotspots.jsonl");
+  const file = artifactPath(path.join("data", "normalized", dateFolder(), "hotspots.jsonl"));
   const text = await readFile(file, "utf8");
   return text
     .split(/\r?\n/)
@@ -158,9 +157,9 @@ export async function generateMaterialCards(limit = 3): Promise<MaterialGenerati
 
   const stamp = safeTimestamp();
   const day = dateFolder();
-  const snapshotAbs = path.join(visionLibRoot, "trend-intake-workspace", "02-hotspot-snapshots", day, `snapshot-${stamp}.json`);
-  const candidateDir = path.join(visionLibRoot, "trend-intake-workspace", "03-candidate-assets", day);
-  const syncPackageAbs = path.join(visionLibRoot, "trend-intake-workspace", "04-sync-packages", day, `sync-${stamp}.json`);
+  const snapshotAbs = path.join(materialWorkspaceRoot, "trend-intake-workspace", "02-hotspot-snapshots", day, `snapshot-${stamp}.json`);
+  const candidateDir = path.join(materialWorkspaceRoot, "trend-intake-workspace", "03-candidate-assets", day);
+  const syncPackageAbs = path.join(materialWorkspaceRoot, "trend-intake-workspace", "04-sync-packages", day, `sync-${stamp}.json`);
 
   await ensureDir(path.dirname(snapshotAbs));
   await ensureDir(candidateDir);
@@ -174,7 +173,7 @@ export async function generateMaterialCards(limit = 3): Promise<MaterialGenerati
     const mdAbs = path.join(candidateDir, `${candidate.candidateId}.md`);
     await writeFile(jsonAbs, JSON.stringify(candidate, null, 2), "utf8");
     await writeFile(mdAbs, toMarkdown(candidate), "utf8");
-    candidateRefs.push(relFromVisionLib(jsonAbs), relFromVisionLib(mdAbs));
+    candidateRefs.push(relFromMaterialWorkspace(jsonAbs), relFromMaterialWorkspace(mdAbs));
   }
 
   const readyAssets = candidates
@@ -200,9 +199,9 @@ export async function generateMaterialCards(limit = 3): Promise<MaterialGenerati
   );
 
   return {
-    snapshotRef: relFromVisionLib(snapshotAbs),
+    snapshotRef: relFromMaterialWorkspace(snapshotAbs),
     candidateRefs,
-    syncPackageRef: relFromVisionLib(syncPackageAbs),
+    syncPackageRef: relFromMaterialWorkspace(syncPackageAbs),
     candidateCount: candidates.length,
     readyForContentSystemCount: readyAssets.length
   };

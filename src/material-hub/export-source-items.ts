@@ -1,5 +1,6 @@
 import path from "node:path";
 import { sha1 } from "../core/hash.js";
+import { artifactPath } from "../core/paths.js";
 import { dateFolder, nowIso } from "../core/time.js";
 import type { HotspotItem, SubscriptionItem } from "../types.js";
 import type { MaterialHubSourceItem, MaterialHubSourceKind } from "./types.js";
@@ -38,7 +39,7 @@ const normalizedSpecs: NormalizedSpec[] = [
 ];
 
 function normalizedRoot(options: ExportSourceItemsOptions): string {
-  return options.normalizedRoot ?? path.join(process.cwd(), "data", "normalized");
+  return options.normalizedRoot ?? artifactPath(path.join("data", "normalized"));
 }
 
 async function resolveDay(options: ExportSourceItemsOptions): Promise<string> {
@@ -97,7 +98,7 @@ export async function exportNormalizedSourceItems(options: ExportSourceItemsOpti
   for (const spec of normalizedSpecs) {
     const abs = path.join(inputDir, spec.fileName);
     if (!(await fileExists(abs))) continue;
-    const normalizedRef = path.relative(process.cwd(), abs).replaceAll("\\", "/");
+    const normalizedRef = options.normalizedRoot ? path.relative(process.cwd(), abs).replaceAll("\\", "/") : `data/normalized/${day}/${spec.fileName}`;
     const rows = await readJsonl<SubscriptionItem | HotspotItem>(abs);
     inputRefs.push(normalizedRef);
     sourceFiles.push({ ref: normalizedRef, count: rows.length });
