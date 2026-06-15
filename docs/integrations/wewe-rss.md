@@ -39,19 +39,25 @@ Avoid company-specific names in new docs and exports. Temporary compatibility wi
 
 Hotspot Collector consumes WeWe RSS feeds and writes normalized subscription records. It should not own the WeWe RSS application runtime.
 
-Current compatibility command:
-
-```text
-npm.cmd run collect:wechat
-```
-
-Target command after migration:
+Primary collection command:
 
 ```text
 npm.cmd run collect:official-accounts
 ```
 
+Compatibility alias:
+
+```text
+npm.cmd run collect:wechat
+```
+
 `collect:wechat` may remain as a one-cycle alias while callers are updated.
+
+The external fork also contains a standalone export tool:
+
+```text
+E:/Project/hotspot-collector-external/wewe-rss/tools/hotspot-official-account-export
+```
 
 ## Boundaries
 

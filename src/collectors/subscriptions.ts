@@ -88,7 +88,7 @@ export async function discoverBilibiliFollowings(): Promise<CollectionResult & {
   };
 }
 
-export async function collectWechatSubscriptions(): Promise<CollectionResult> {
+export async function collectOfficialAccountSubscriptions(): Promise<CollectionResult> {
   const result = await collectWechatRssSubscriptions(wechatRssBaseUrl, wechatRssFeeds, wechatRssLimit);
   const normalizedRef = await appendSubscriptions(uniqueByDedupeKey(result.items));
   const healthRef = await writeHealth(result.health, wechatRssFeeds.map((feed) => `wechat-rss-${feed}`));
@@ -99,6 +99,8 @@ export async function collectWechatSubscriptions(): Promise<CollectionResult> {
     subscriptionCount: result.items.length
   };
 }
+
+export const collectWechatSubscriptions = collectOfficialAccountSubscriptions;
 
 export async function collectFollowingSubscriptions(): Promise<CollectionResult & { followingCount: number }> {
   const followings = await collectBilibiliFollowings(bilibiliUid, bilibiliCookie, bilibiliFollowingLimit);

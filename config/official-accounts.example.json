@@ -3,19 +3,19 @@
   "default_limit": 20,
   "default_page": 1,
   "timeout": 30,
-  "companies": [
+  "groups": [
     {
-      "company": "Tencent",
+      "group": "AI research",
       "feeds": [
         {
           "feed_id": "MP_WXS_123456789",
-          "account_name": "Tencent Research Institute",
+          "account_name": "Example Official Account",
           "limit": 20
         }
       ]
     },
     {
-      "company": "Alibaba",
+      "group": "Industry watches",
       "feed_ids": [
         "MP_WXS_987654321"
       ]

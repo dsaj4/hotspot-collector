@@ -79,6 +79,7 @@ Collection, scheduling, and compatibility commands:
 
 ```text
 npm.cmd run collect:subscriptions
+npm.cmd run collect:official-accounts
 npm.cmd run collect:wechat
 npm.cmd run collect:hotspots
 npm.cmd run collect:all

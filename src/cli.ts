@@ -2,6 +2,7 @@ type Command =
   | "collect:subscriptions"
   | "discover:bilibili-followings"
   | "collect:subscriptions:followings"
+  | "collect:official-accounts"
   | "collect:wechat"
   | "collect:bilibili-subtitles"
   | "video:intake-bilibili"
@@ -94,9 +95,9 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (command === "collect:wechat") {
-    const { collectWechatSubscriptions } = await import("./collectors/subscriptions.js");
-    printJson(await collectWechatSubscriptions());
+  if (command === "collect:official-accounts" || command === "collect:wechat") {
+    const { collectOfficialAccountSubscriptions } = await import("./collectors/subscriptions.js");
+    printJson(await collectOfficialAccountSubscriptions());
     return;
   }
 

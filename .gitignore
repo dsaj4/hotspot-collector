@@ -16,9 +16,6 @@ data/sessions/
 reports/daily/
 reports/feeds/
 skill-workspaces/*/upstream/
-company-wechat-rss/vendor/
-company-wechat-rss/tmp/
-company-wechat-rss/output/
 .env
 .env.local
 .env.*.local
