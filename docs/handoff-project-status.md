@@ -2,7 +2,7 @@
 
 Updated: 2026-06-15
 
-This page summarizes the current repository state and the remaining migration work. Historical handoff details from the pre-migration layout were removed because they described vendored apps and in-repository runtime data.
+This page summarizes the current repository state after the structure migration. Historical handoff details from the pre-migration layout were removed because they described vendored apps and in-repository runtime data.
 
 ## Repository
 
@@ -79,12 +79,12 @@ Completed:
 - BiliSum AI subtitle fallback is covered by external unit tests.
 - WeWe RSS is maintained as `dsaj4/wewe-rss:hotspot/wechat-official-account-adapter`.
 - WeWe RSS official-account export exists in the external fork.
-- The old in-repository `company-wechat-rss/` wrapper has been deleted.
+- The old in-repository WeWe RSS wrapper has been deleted.
 - Generic skills were removed from this repository; only project-specific skills remain.
 - Old Bilibili dynamic/following/subtitle collectors, scheduler tasks, CLI commands, and vendored RSSWorker code have been deleted.
 - Source and test files are organized by functional domain under `src/collection`, `src/integrations`, `src/video-notes`, `src/reporting`, and mirrored test folders.
 
-Still in progress:
+External follow-up:
 
 - Real BiliSum note generation is blocked by Bilibili HTTP 412 risk control for `BV1tfoNBqEtN`; retry after restoring an allowed Bilibili login/network state.
 
@@ -93,14 +93,12 @@ Known smoke-test result:
 - BiliSum service was restarted from `E:/Project/hotspot-collector-external/BiliSum`; `video:bilisum-status` reported `runtimePython` as `E:/Project/hotspot-collector-external/BiliSum/.venv/Scripts/python.exe`.
 - `npm.cmd run video:notes-bilibili -- --url=https://www.bilibili.com/video/BV1tfoNBqEtN` reached BiliSum but failed with Bilibili HTTP 412 risk control. This does not contradict the structural migration, but it means the real video-note smoke test is not functionally complete yet.
 
-Removed entries:
+Removed built-in Bilibili entries:
 
 ```text
 discover:bilibili-followings
 collect:subscriptions:followings
 collect:bilibili-subtitles
-src/vendor/rssworker-bilibili/
-src/adapters/subscriptions/bilibili*.ts
 ```
 
 ## Verification
