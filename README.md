@@ -1,21 +1,62 @@
 # Hotspot Collector
 
-A local-first hotspot and subscription collection system. The main collection pipeline still lives here, but material processing is now active in the paired `material-hub-workspace`: real source access, source health, raw snapshots, normalized JSONL, repeated scheduled runs, single-source digests, and reviewable material cards.
+Local-first collection and material workflow orchestration for hotspots, subscriptions, social links, Bilibili video notes, and reviewable material cards.
 
-## Capabilities
+The source repository intentionally stays small: TypeScript code, tests, fixtures, config templates, docs, scripts, and project-specific skills live here. Runtime outputs and upstream-derived applications are mounted from local external roots.
 
-- Bilibili subscriptions: configured UID dynamics/videos, optional explicit `BILIBILI_COOKIE`, following discovery, and followed-UP batch collection.
-- WeChat public accounts: consumes a local WeWe RSS service under `company-wechat-rss/`.
-- X platform: official API v2 collection has been removed because API access is not available. Future support should use explicit RSSHub or browser-session paths.
-- Hotspots: Bilibili, Weibo, Zhihu, Douyin, Baidu, GitHub Trending, Hacker News, and Google News AI.
-- Xiaohongshu: removed from this phase; revisit only after a separate access and risk review.
-- Scheduler: one-shot task planning and due-task execution for cron/Task Scheduler integration.
-
-## Commands
+## Current Shape
 
 ```text
-npm.cmd run video:notes-bilibili -- --url=https://www.bilibili.com/video/BV1mXEv6bEQo/
-npm.cmd run video:notes-bilibili-list -- --input=E:\path\to\bilibili-url-list.json --limit=10
+hotspot-collector/                         source repository
+E:/Project/hotspot-collector-data/         local runtime data root
+E:/Project/hotspot-collector-external/     external upstream-derived apps
+```
+
+External applications are not submodules:
+
+- `E:/Project/hotspot-collector-external/BiliSum`
+- `E:/Project/hotspot-collector-external/wewe-rss`
+
+Runtime artifacts keep stable logical references such as `data/raw/...` and `reports/feeds/...`, but default writes are redirected to `E:/Project/hotspot-collector-data` on this workstation.
+
+## Install
+
+```text
+npm ci
+```
+
+Node.js 22 or newer is required.
+
+## Environment
+
+Copy `.env.example` to `.env.local` or set variables in the shell.
+
+Core roots:
+
+- `HOTSPOT_DATA_ROOT`: runtime data root. Recommended: `E:/Project/hotspot-collector-data`.
+- `HOTSPOT_EXTERNAL_ROOT`: external app root. Recommended: `E:/Project/hotspot-collector-external`.
+- `BILISUM_PROJECT_ROOT`: external BiliSum checkout.
+- `BILISUM_APP_DATA_ROOT`: BiliSum app/runtime data root.
+- `WEWE_RSS_PROJECT_ROOT`: external WeWe RSS checkout.
+
+Collection and integration variables:
+
+- `BILIBILI_COOKIE`: optional explicit cookie for allowed Bilibili API paths.
+- `BILIBILI_FOLLOWING_LIMIT`: followed-UP batch limit, default `20`.
+- `WECHAT_RSS_BASE_URL`: local WeWe RSS URL, default `http://127.0.0.1:4000`.
+- `WECHAT_RSS_FEEDS`: comma-separated WeWe RSS feed ids, default `all`.
+- `WECHAT_RSS_LIMIT`: max articles per WeChat feed, default `30`.
+- `RSSHUB_BASE_URL`: optional local RSSHub base URL for RSSHub-compatible sources.
+- `GENERIC_RSS_LIMIT`: max items per generic RSS/RSSHub source, default `30`.
+- `BROWSER_EXECUTABLE_PATH`: optional Chrome or Edge executable path for explicit browser-session login.
+
+Credentialed paths are opt-in. Do not commit `.env.local`, cookies, browser profiles, database files, screenshots, generated notes, or runtime logs.
+
+## Main Commands
+
+Preferred workflows:
+
+```text
 npm.cmd run workflow:hotspots -- --stage=collect
 npm.cmd run workflow:hotspots -- --stage=digest --mode=local-rule
 npm.cmd run workflow:hotspots -- --stage=material --mode=deepseek
@@ -23,122 +64,114 @@ npm.cmd run workflow:subscriptions -- --stage=collect
 npm.cmd run workflow:subscriptions -- --stage=digest --mode=local-rule
 npm.cmd run workflow:subscriptions -- --stage=material --mode=deepseek
 npm.cmd run material:from-link -- --url=https://example.com/article --content-file=E:\path\to\article.md --mode=deepseek
+```
+
+BiliSum video notes:
+
+```text
+npm.cmd run video:bilisum-status
+npm.cmd run video:setup-bilisum
+npm.cmd run video:notes-bilibili -- --url=https://www.bilibili.com/video/BV1tfoNBqEtN
+npm.cmd run video:notes-bilibili-list -- --input=E:\path\to\bilibili-url-list.json --limit=10
+```
+
+Collection, scheduling, and compatibility commands:
+
+```text
 npm.cmd run collect:subscriptions
-npm.cmd run discover:bilibili-followings
-npm.cmd run collect:subscriptions:followings
 npm.cmd run collect:wechat
-npm.cmd run collect:bilibili-subtitles
-npm.cmd run collect:bilibili-subtitles -- --max-items=10
 npm.cmd run collect:hotspots
 npm.cmd run collect:all
 npm.cmd run schedule:plan
 npm.cmd run schedule:run
-npm.cmd run schedule:run -- --max-tasks=1
-npm.cmd run schedule:run -- --task=collect:hotspots
-npm.cmd run source:detect -- https://space.bilibili.com/289842886
-npm.cmd run source:template -- https://x.com/example
-npm.cmd run secrets:status
-npm.cmd run browser:status -- --platform=x
 npm.cmd run feed:generate
-npm.cmd run feed:generate -- --kind=subscriptions
 npm.cmd run report:daily
+```
+
+Some old Bilibili subscription/subtitle commands still exist during the migration branch, but the target design is to acquire Bilibili URLs through `social-browser-collection` and process videos through BiliSum.
+
+Development checks:
+
+```text
+npm.cmd run typecheck
+npm.cmd test
 npm.cmd run validate:fixtures
 npm.cmd run check
 ```
 
-`video:notes-bilibili`, `workflow:hotspots`, `workflow:subscriptions`, and `material:from-link` are the preferred high-level entry points. `materials:generate` and `sync:content-system` still exist, but they are secondary to the material-hub pipeline and are not the primary acceptance path.
+## Data Root
 
-## Environment
+Default runtime writes on this workstation:
 
-Copy `.env.example` to `.env.local` or set variables in your shell:
+```text
+data/raw/...          -> E:/Project/hotspot-collector-data/raw/...
+data/normalized/...   -> E:/Project/hotspot-collector-data/normalized/...
+data/health/...       -> E:/Project/hotspot-collector-data/health/...
+data/secrets/...      -> E:/Project/hotspot-collector-data/secrets/...
+data/sessions/...     -> E:/Project/hotspot-collector-data/sessions/...
+reports/...           -> E:/Project/hotspot-collector-data/reports/...
+```
 
-- `BILIBILI_COOKIE`: optional explicit login cookie for Bilibili followings and fallback APIs.
-- `BILIBILI_FOLLOWING_LIMIT`: followed-UP batch limit, default `20`.
-- `WECHAT_RSS_BASE_URL`: local WeWe RSS URL, default `http://127.0.0.1:4000`.
-- `WECHAT_RSS_FEEDS`: comma-separated WeWe RSS feed ids, default `all`.
-- `WECHAT_RSS_LIMIT`: max articles per WeChat feed, default `30`.
-- `RSSHUB_BASE_URL`: optional local RSSHub base URL for Infohub-style routes.
-- `GENERIC_RSS_LIMIT`: max items per generic RSS/RSSHub source, default `30`.
-- `BROWSER_EXECUTABLE_PATH`: optional Chrome or Edge executable path for explicit browser-session login.
+See [docs/operations/data-root.md](docs/operations/data-root.md).
 
-X / Twitter API environment variables are intentionally not supported in this phase.
+## External Apps
 
-## Bilibili Subtitles
+BiliSum fork:
 
-`collect:bilibili-subtitles` reads the latest normalized subscriptions and hotspots, finds Bilibili video URLs, and uses `yt-dlp` to fetch existing platform subtitles only. It does not download audio and does not run ASR transcription. Videos without available subtitles are recorded as empty or unavailable health.
+```text
+path:     E:/Project/hotspot-collector-external/BiliSum
+origin:   https://github.com/dsaj4/BiliSum.git
+upstream: https://github.com/lycohana/BiliSum.git
+branch:   hotspot/ai-subtitle
+```
 
-`collect:all` runs this subtitle step after subscription and hotspot collection, so Bilibili video subtitles become part of the main collection pipeline without changing the individual source adapters.
+WeWe RSS fork:
 
-## BiliSum Video Notes
+```text
+path:     E:/Project/hotspot-collector-external/wewe-rss
+origin:   https://github.com/dsaj4/wewe-rss.git
+upstream: https://github.com/cooderl/wewe-rss.git
+branch:   hotspot/wechat-official-account-adapter
+```
 
-`video:notes-bilibili` runs the isolated BiliSum subsystem and writes a learning package under `data/video-notes/`. It is for video notes, transcript, knowledge note, visual note, multimodal enhanced note, mind map, and screenshot evidence. It does not publish a material source item unless the full material pipeline explicitly requests that behavior.
+See [docs/operations/external-dependencies.md](docs/operations/external-dependencies.md).
 
-`video:notes-bilibili-list` processes a selected Bilibili URL list or `BrowserObservation` JSON and writes a batch learning-package index. It does not parse entire favorites pages, perform topic filtering, run LLM reranking, run ASR, or create material cards by default.
+## Bilibili Video Notes
 
-For a material card, use `material:from-link` instead. Bilibili links routed through `material:from-link` use BiliSum as an upstream video understanding step, then continue through SourceDigest and aggregate-card generation.
+`video:notes-bilibili` calls the external BiliSum service and writes learning packages under the external data root. The target BiliSum fork adds Bilibili platform subtitle acquisition, including AI subtitles when available, before falling back to ASR.
+
+Full-fidelity video notes are a future requirement: preserve the video's argument structure, evidence order, and visual references instead of collapsing everything into a high-level abstract. See [docs/requirements/full-fidelity-video-notes.md](docs/requirements/full-fidelity-video-notes.md).
+
+## Official Accounts
+
+WeChat public account collection is routed through a local WeWe RSS service. The target external fork uses the generic "official account" model, not a company-only model. Configuration should use groups/accounts and export `official_account_articles.json` / `official_account_articles.csv`.
+
+See [docs/integrations/wewe-rss.md](docs/integrations/wewe-rss.md).
 
 ## Social Browser Collection
 
-Browser-visible social-media collection is handled through the `social-browser-collection` skill. The browser stage extracts visible items and URL lists from pages such as Bilibili favorites, search results, home feeds, Weibo streams, Xiaohongshu note lists, and WeWe RSS setup pages. It stops at `BrowserObservation` or URL-list output and can call `social:ingest` when normalized collection is needed.
+Browser-visible social collection is handled by the project skill `social-browser-collection`. It collects visible URLs and metadata from pages such as Bilibili favorites/search/home feeds, Weibo streams, Xiaohongshu note lists, and WeWe RSS setup pages. The browser stage should stop at URL lists or normalized observations unless an explicit ingestion command is requested.
 
-If collected Bilibili URLs should become video notes, pass the selected URL-list or observation JSON to `video:notes-bilibili-list`. If collected links should become material cards, route them through the material-hub pipeline.
+See [docs/integrations/social-browser-collection.md](docs/integrations/social-browser-collection.md).
 
 ## Material Hub Workflow
 
-The current material workflow is:
+The main material path is:
 
 ```text
 source collection -> SourceDigest -> digest brief -> aggregate material card -> optional explicit IMA sync
 ```
 
-Digest writes compact source understanding and a readable brief. Aggregate cards focus on readable short-form material writing, source selection, discarded-source notes, conflicts, gaps, and traceability. IMA sync is explicit and is not triggered by collection or card generation.
+Collection does not automatically sync to IMA. IMA synchronization is explicit and reviewable.
 
-## Source Catalog
+## Repository Docs
 
-Built-in sources are defined in code and can be previewed through `config/sources.example.json`. A local `config/sources.json` can be introduced for Infohub-style source entries as the next implementation step. Source templates generated by `source:template` are disabled by default, especially credentialed or browser-session sources.
-
-## Credentials And Browser Sessions
-
-Credentialed paths are opt-in. `secrets:set` stores local values under ignored `data/secrets/` and prints only redacted status. `browser:login` opens a local Chrome/Edge profile under ignored `data/sessions/<platform>/`; collectors do not auto-open login windows.
-
-## Feed Output
-
-`feed:generate` reads the latest normalized JSONL and writes RSS/JSON Feed compatibility files under `reports/feeds/`. It does not refetch source platforms.
-
-## WeChat RSS
-
-The workspace includes a WeWe RSS wrapper at `company-wechat-rss/`.
-
-```text
-cd E:\Project\hotspot-collector\company-wechat-rss
-powershell -ExecutionPolicy Bypass -File .\scripts\prepare_wewe_rss_runtime.ps1
-powershell -ExecutionPolicy Bypass -File .\scripts\start_wewe_rss.ps1
-```
-
-Open `http://127.0.0.1:4000/dash`, log in, and add public-account feeds. Then run `npm.cmd run collect:wechat`.
-
-## Scheduler
-
-`schedule:plan` prints the current task plan and which tasks are due. `schedule:run` executes due tasks once and writes `data/scheduler/state.json`. Use `--max-tasks=1` or `--task=<id>` during manual testing. It is intentionally not a long-running daemon, so it can be called by cron, Windows Task Scheduler, GitHub Actions, or another orchestrator.
-
-## Development
-
-```text
-npm ci
-npm.cmd run check
-```
-
-The check command runs TypeScript type checking, Vitest tests, and public fixture validation. CI uses the same gates.
-
-Public fixtures live under `fixtures/` and include raw snapshots, normalized JSONL, and source-health examples. Run `npm.cmd run validate:fixtures` when changing output shapes.
-
-## Docs
-
-- [Design and reuse](docs/design-and-reuse.md)
-- [Source entry decisions](docs/source-entry-decisions.md)
-- [Analysis/material system design](docs/analysis-and-material-system.md)
-- [Workflow and skill routing](docs/workflow-skill-routing.md)
-- [GitHub readiness checklist](docs/github-readiness.md)
-- [Handoff and project status](docs/handoff-project-status.md)
-- [Material hub workspace](E:/Project/vision-lib/material-hub-workspace/README.md)
-- [Karpathy Guidelines integration](docs/vendor/andrej-karpathy-skills.md)
+- [Architecture overview](docs/architecture/overview.md)
+- [Data root](docs/operations/data-root.md)
+- [External dependencies](docs/operations/external-dependencies.md)
+- [BiliSum integration](docs/integrations/bilisum.md)
+- [WeWe RSS integration](docs/integrations/wewe-rss.md)
+- [Social browser collection](docs/integrations/social-browser-collection.md)
+- [Smoke tests](docs/operations/smoke-tests.md)
+- [Full-fidelity video notes requirement](docs/requirements/full-fidelity-video-notes.md)
+- [Migration plan](docs/migration/project-structure-migration-plan.md)

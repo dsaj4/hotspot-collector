@@ -21,7 +21,7 @@ This project now separates collection, video learning notes, material-card produ
 | `subscription-material-collection` | User asks for subscription collection, subscription digest, or subscription material cards. | `npm.cmd run workflow:subscriptions -- --stage=<collect|digest|material>` |
 | `material-hub-ima-sync` | User explicitly asks to sync material outputs to IMA or reconcile IMA state. | Uses the global `ima-skill` and fixed knowledge base configuration. |
 
-Lower-level browser, WeChat, Bilibili browser-session, and maintenance skills remain available for setup and troubleshooting, but normal daily work should enter through the six business skills above.
+Lower-level browser, official-account, BiliSum, and maintenance actions remain available for setup and troubleshooting, but normal daily work should enter through the seven business skills above.
 
 ## Intent Routing
 
@@ -85,7 +85,7 @@ npm.cmd run workflow:subscriptions -- --stage=material --mode=deepseek
 
 ### BiliSum Subsystem
 
-BiliSum is kept as an isolated subsystem under `data/bilisum/`. It can be used by itself and can also act as a digest upstream for the material hub.
+BiliSum is kept as an external application under `E:/Project/hotspot-collector-external/BiliSum`. Its app/runtime data is mounted under `HOTSPOT_DATA_ROOT`, usually `E:/Project/hotspot-collector-data/bilisum`. It can be used by itself and can also act as a digest upstream for the material hub.
 
 The default standalone BiliSum package includes:
 
@@ -97,7 +97,7 @@ The default standalone BiliSum package includes:
 - screenshot evidence records
 - an index of openable files
 
-Audio/ASR does not run automatically in the first version. The preferred order is platform AI subtitles first, then ASR only after an explicit request or future policy change.
+The preferred order is platform subtitles first, including AI subtitles when available and allowed by normal access, then ASR fallback.
 
 ### Social Browser Collection
 

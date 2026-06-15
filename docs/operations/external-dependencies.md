@@ -52,3 +52,32 @@ WEWE_RSS_PROJECT_ROOT=E:/Project/hotspot-collector-external/wewe-rss
 ```
 
 These repositories are not submodules. They are updated, committed, and pushed independently from `hotspot-collector`.
+
+## Setup
+
+```powershell
+New-Item -ItemType Directory -Force E:\Project\hotspot-collector-external | Out-Null
+git clone https://github.com/dsaj4/BiliSum.git E:\Project\hotspot-collector-external\BiliSum
+git -C E:\Project\hotspot-collector-external\BiliSum remote add upstream https://github.com/lycohana/BiliSum.git
+git -C E:\Project\hotspot-collector-external\BiliSum fetch origin
+git -C E:\Project\hotspot-collector-external\BiliSum fetch upstream
+
+git clone https://github.com/dsaj4/wewe-rss.git E:\Project\hotspot-collector-external\wewe-rss
+git -C E:\Project\hotspot-collector-external\wewe-rss remote add upstream https://github.com/cooderl/wewe-rss.git
+git -C E:\Project\hotspot-collector-external\wewe-rss fetch origin
+git -C E:\Project\hotspot-collector-external\wewe-rss fetch upstream
+```
+
+If a directory already exists, verify remotes instead of recloning:
+
+```powershell
+git -C E:\Project\hotspot-collector-external\BiliSum remote -v
+git -C E:\Project\hotspot-collector-external\wewe-rss remote -v
+```
+
+## Repository Boundaries
+
+- Commit and push BiliSum changes in the BiliSum repository.
+- Commit and push WeWe RSS changes in the WeWe RSS repository.
+- Commit only integration code, docs, config templates, and tests in `hotspot-collector`.
+- Do not vendor either external application back into this repository.

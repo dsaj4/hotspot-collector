@@ -35,3 +35,18 @@ robocopy E:\Project\hotspot-collector\data E:\Project\hotspot-collector-data /E 
 ```
 
 Treat robocopy exit codes `0` through `7` as successful copy states.
+
+## What Must Stay Out Of Git
+
+Do not commit:
+
+- secrets and cookies
+- browser profiles and sessions
+- SQLite or application database files
+- generated reports
+- generated video notes
+- screenshots and extracted frames
+- audio/video downloads
+- runtime logs and temporary files
+
+If a generated artifact is useful for tests, reduce it into a public fixture under `fixtures/` with secrets and personal data removed.

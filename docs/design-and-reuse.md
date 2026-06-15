@@ -2,23 +2,25 @@
 
 Updated: 2026-05-28
 
-This project follows the installed Karpathy-style engineering guidelines: state assumptions, keep the first implementation verifiable, preserve raw evidence, and represent unstable sources as source health instead of fake success.
+This project follows the installed Karpathy-style engineering guidelines: state assumptions, keep implementation verifiable, preserve raw evidence, and represent unstable sources as source health instead of fake success.
 
 ## Objective
 
-Build a sustainable collection system for:
+Build a sustainable orchestration repository for:
 
-- Platform subscriptions: configured accounts, followed accounts, public-account feeds, and future RSSHub/browser-session sources.
+- Platform subscriptions: RSS, official-account feeds, browser-observed social items, and future explicit RSSHub/browser-session sources.
 - Platform hotspots: hot lists, search trends, and technical/community trends.
+- Bilibili video understanding through the external BiliSum fork.
+- Material cards and optional explicit IMA sync.
 
-Automatic value judgment, summaries, and material cards remain design-stage work. The main collector should stay independent from those future analysis layers.
+Runtime data and upstream-derived applications are deliberately externalized.
 
 ## Current Scope
 
 ### Subscriptions
 
-- Bilibili: rewritten minimal adapter inspired by RSSWorker-Bilibili/RSSWorker. Supports UID dynamics, UID videos, following discovery, and followed-UP batch collection.
-- WeChat: consumes a local WeWe RSS service. The main collector reads `/feeds/<feed>.json` and falls back to `/feeds/<feed>.rss`.
+- Bilibili: target path is URL acquisition through `social-browser-collection`, then video understanding through the external BiliSum fork.
+- WeChat official accounts: consumes a local WeWe RSS service from the external WeWe RSS fork. The main collector reads `/feeds/<feed>.json` and falls back to `/feeds/<feed>.rss`.
 - Generic RSS and YouTube: source-catalog-driven direct RSS subscriptions, with YouTube using native channel RSS.
 - RSSHub compatibility: source-catalog-driven routes for Infohub-style X/Twitter, Weibo, Zhihu, and Bilibili subscriptions.
 - X: official API v2 support has been removed because API credentials are not available. Future support should be rebuilt from Infohub-style RSSHub or browser-session paths.
@@ -44,7 +46,6 @@ X recent search via official API has been removed from the hotspot collector.
 ```text
 source adapters
   |-- subscriptions
-  |     |-- bilibili
   |     |-- rss
   |     |-- rsshub
   |     |-- wechat-rss
@@ -62,7 +63,7 @@ source adapters
 collectors
   |-- collect subscriptions
   |-- collect hotspots
-  |-- discover followings/followers
+  |-- ingest social observations
 
 scheduler
   |-- plan due tasks
@@ -70,12 +71,12 @@ scheduler
   |-- persist task state
 
 storage
-  |-- data/raw/<date>/*.json
-  |-- data/normalized/<date>/*.jsonl
-  |-- data/health/source-health.json
-  |-- data/scheduler/state.json
-  |-- data/secrets/*.json (local ignored)
-  |-- data/sessions/<platform>/ (local ignored)
+  |-- HOTSPOT_DATA_ROOT/raw/<date>/*.json
+  |-- HOTSPOT_DATA_ROOT/normalized/<date>/*.jsonl
+  |-- HOTSPOT_DATA_ROOT/health/source-health.json
+  |-- HOTSPOT_DATA_ROOT/scheduler/state.json
+  |-- HOTSPOT_DATA_ROOT/secrets/*.json
+  |-- HOTSPOT_DATA_ROOT/sessions/<platform>/
 
 compatibility output
   |-- reports/feeds/subscriptions.rss
@@ -108,10 +109,10 @@ Credentialed collection is opt-in:
 
 | Project | Reuse Point | Current Treatment |
 | --- | --- | --- |
-| Nikkiiw/RSSWorker-Bilibili | Bilibili RSS and gRPC approach | Reference and rewrite minimal adapter |
+| dsaj4/BiliSum | Bilibili video understanding and note generation | External fork, custom branch `hotspot/ai-subtitle` |
 | yllhwa/RSSWorker | Multi-platform RSS route patterns | Reference only |
 | DIYgod/RSSHub | Broad route catalog and RSS conventions | Fallback/reference, not primary dependency |
-| cooderl/wewe-rss | WeChat public-account RSS generation | Vendored under `company-wechat-rss/vendor/wewe-rss` |
+| dsaj4/wewe-rss | WeChat official-account RSS generation and export | External fork, custom branch `hotspot/wechat-official-account-adapter` |
 | TrendRadar / next-daily-hot | Domestic hotspot source selection | Used for adapter source decisions |
 | trend-pulse | Technical/international trend sources | Used for GitHub/HN/Google-style additions |
 
@@ -126,9 +127,9 @@ Credentialed collection is opt-in:
 
 ## Next Steps
 
-1. Add mocked HTTP integration tests for every adapter.
-2. Expand non-private raw snapshot fixtures as adapters mature.
-3. Add a safe local Bilibili cookie import utility that never logs full cookies.
-4. Verify real WeChat article output after feeds are added in WeWe RSS.
-5. Add Infohub-compatible RSSHub/browser-session source paths for X only after local verification.
-6. Initialize git when ready and prepare the first tagged release.
+1. Finish external BiliSum custom branch for platform subtitle and AI subtitle fallback.
+2. Finish external WeWe RSS official-account export branch.
+3. Remove deprecated Bilibili dynamic/following/subtitle collectors from this repository.
+4. Keep only project-specific skills in this repository.
+5. Reorganize source and tests by functional domain.
+6. Run a real BiliSum smoke test against `BV1tfoNBqEtN`.
