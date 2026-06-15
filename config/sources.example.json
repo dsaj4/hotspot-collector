@@ -1,0 +1,43 @@
+{
+  "sources": [
+    {
+      "id": "bilibili-user-dynamic",
+      "kind": "subscription",
+      "platform": "bilibili",
+      "name": "Bilibili user dynamic",
+      "enabled": true,
+      "intervalMinutes": 30,
+      "fetchMode": "public-api",
+      "params": {
+        "uid": "289842886"
+      },
+      "policy": {
+        "requiresLogin": false,
+        "usesCookie": false,
+        "usesBrowserSession": false,
+        "publicOnly": true,
+        "enabledByDefault": true
+      }
+    },
+    {
+      "id": "x-browser-example",
+      "kind": "subscription",
+      "platform": "x",
+      "name": "X browser-session example",
+      "enabled": false,
+      "intervalMinutes": 60,
+      "fetchMode": "browser-session",
+      "params": {
+        "inputUrl": "https://x.com/example",
+        "platformId": "example"
+      },
+      "policy": {
+        "requiresLogin": true,
+        "usesCookie": false,
+        "usesBrowserSession": true,
+        "publicOnly": false,
+        "enabledByDefault": false
+      }
+    }
+  ]
+}

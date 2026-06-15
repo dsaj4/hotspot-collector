@@ -1,0 +1,4 @@
+interface:
+  display_name: "社交浏览器采集"
+  short_description: "Collect visible social URLs"
+  default_prompt: "使用 $social-browser-collection 采集社交媒体页面的可见条目和 URL。"

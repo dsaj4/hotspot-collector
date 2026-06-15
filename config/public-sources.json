@@ -1,0 +1,34 @@
+[
+  {
+    "id": "hacker-news-frontpage",
+    "kind": "hotspot",
+    "platform": "hacker-news",
+    "name": "Hacker News Front Page",
+    "enabled": true,
+    "intervalMinutes": 60,
+    "fetchMode": "public-api",
+    "policy": {
+      "requiresLogin": false,
+      "usesCookie": false,
+      "usesBrowserSession": false,
+      "publicOnly": true,
+      "enabledByDefault": true
+    }
+  },
+  {
+    "id": "google-news-ai",
+    "kind": "hotspot",
+    "platform": "google-news",
+    "name": "Google News AI RSS",
+    "enabled": true,
+    "intervalMinutes": 60,
+    "fetchMode": "direct-rss",
+    "policy": {
+      "requiresLogin": false,
+      "usesCookie": false,
+      "usesBrowserSession": false,
+      "publicOnly": true,
+      "enabledByDefault": true
+    }
+  }
+]

@@ -1,0 +1,46 @@
+{
+  "sources": [
+    {
+      "id": "bilibili-browser",
+      "platform": "bilibili",
+      "enabled": true,
+      "streams": ["subscription", "search", "favorite", "hotspot", "home-feed"],
+      "searchKeywords": ["AI"],
+      "targetAccounts": [],
+      "itemLimit": 10,
+      "fallbackByStream": {
+        "subscription": "bilibili-subscriptions",
+        "hotspot": "bilibili-hotspots",
+        "home-feed": "bilibili-subscriptions"
+      }
+    },
+    {
+      "id": "weibo-browser",
+      "platform": "weibo",
+      "enabled": true,
+      "streams": ["subscription", "search", "favorite", "hotspot", "home-feed"],
+      "searchKeywords": ["AI"],
+      "targetAccounts": [],
+      "itemLimit": 10,
+      "fallbackByStream": {
+        "hotspot": "weibo-hotspots"
+      }
+    },
+    {
+      "id": "xiaohongshu-browser",
+      "platform": "xiaohongshu",
+      "enabled": true,
+      "streams": ["subscription", "search", "favorite", "hotspot", "home-feed"],
+      "searchKeywords": ["AI"],
+      "targetAccounts": [],
+      "itemLimit": 10
+    },
+    {
+      "id": "wechat-browser-maintenance",
+      "platform": "wechat",
+      "enabled": true,
+      "streams": ["subscription"],
+      "itemLimit": 1
+    }
+  ]
+}

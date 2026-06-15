@@ -1,0 +1,12 @@
+{
+  "provider": "html-public",
+  "sourceId": "github-trending",
+  "items": [
+    {
+      "rank": 1,
+      "title": "sample/repository",
+      "url": "https://github.com/sample/repository",
+      "starsToday": "123 stars today"
+    }
+  ]
+}

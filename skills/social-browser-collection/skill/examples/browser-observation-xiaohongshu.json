@@ -1,0 +1,19 @@
+{
+  "sourceId": "xiaohongshu-browser",
+  "platform": "xiaohongshu",
+  "streamType": "home-feed",
+  "pageUrl": "https://www.xiaohongshu.com/explore",
+  "status": "ok",
+  "capturedAt": "2026-06-11T00:00:00.000Z",
+  "items": [
+    {
+      "title": "Sample AI note",
+      "url": "https://www.xiaohongshu.com/explore/sample",
+      "authorName": "Sample Author",
+      "body": "A sanitized sample note body visible on the page.",
+      "media": [
+        "https://example.com/sample.jpg"
+      ]
+    }
+  ]
+}

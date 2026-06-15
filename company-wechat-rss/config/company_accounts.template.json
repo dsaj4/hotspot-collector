@@ -1,0 +1,24 @@
+{
+  "base_url": "http://127.0.0.1:4000",
+  "default_limit": 20,
+  "default_page": 1,
+  "timeout": 30,
+  "companies": [
+    {
+      "company": "Tencent",
+      "feeds": [
+        {
+          "feed_id": "MP_WXS_123456789",
+          "account_name": "Tencent Research Institute",
+          "limit": 20
+        }
+      ]
+    },
+    {
+      "company": "Alibaba",
+      "feed_ids": [
+        "MP_WXS_987654321"
+      ]
+    }
+  ]
+}

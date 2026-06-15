@@ -1,0 +1,8 @@
+output/company-data/
+output/feed_catalog.json
+tmp/wewe-rss/
+vendor/wewe-rss/node_modules/
+vendor/wewe-rss/apps/server/client/
+vendor/wewe-rss/apps/server/data/
+vendor/wewe-rss/apps/server/.env
+vendor/wewe-rss/apps/web/.env

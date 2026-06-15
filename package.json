@@ -1,0 +1,73 @@
+{
+  "name": "hotspot-collector",
+  "version": "0.1.0",
+  "description": "Local-first hotspot and subscription collector with source health, raw snapshots, fixtures, and one-shot scheduling.",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "hotspot",
+    "rss",
+    "bilibili",
+    "wechat",
+    "collector"
+  ],
+  "scripts": {
+    "collect:subscriptions": "tsx src/cli.ts collect:subscriptions",
+    "discover:bilibili-followings": "tsx src/cli.ts discover:bilibili-followings",
+    "collect:subscriptions:followings": "tsx src/cli.ts collect:subscriptions:followings",
+    "collect:wechat": "tsx src/cli.ts collect:wechat",
+    "collect:bilibili-subtitles": "tsx src/cli.ts collect:bilibili-subtitles",
+    "video:intake-bilibili": "tsx src/cli.ts video:intake-bilibili",
+    "video:notes-bilibili": "tsx src/cli.ts video:notes-bilibili",
+    "video:notes-bilibili-list": "tsx src/cli.ts video:notes-bilibili-list",
+    "video:intake-bilibili-latest": "tsx src/cli.ts video:intake-bilibili-latest",
+    "video:setup-bilisum": "tsx src/cli.ts video:setup-bilisum",
+    "video:bilisum-status": "tsx src/cli.ts video:bilisum-status",
+    "collect:hotspots": "tsx src/cli.ts collect:hotspots",
+    "collect:all": "tsx src/cli.ts collect:all",
+    "schedule:plan": "tsx src/cli.ts schedule:plan",
+    "schedule:run": "tsx src/cli.ts schedule:run",
+    "secrets:set": "tsx src/cli.ts secrets:set",
+    "secrets:status": "tsx src/cli.ts secrets:status",
+    "secrets:delete": "tsx src/cli.ts secrets:delete",
+    "browser:login": "tsx src/cli.ts browser:login",
+    "browser:cdp": "tsx src/cli.ts browser:cdp",
+    "browser:status": "tsx src/cli.ts browser:status",
+    "browser:clear": "tsx src/cli.ts browser:clear",
+    "social:ingest": "tsx src/cli.ts social:ingest",
+    "social:fallback": "tsx src/cli.ts social:fallback",
+    "feed:generate": "tsx src/cli.ts feed:generate",
+    "source:detect": "tsx src/cli.ts source:detect",
+    "source:template": "tsx src/cli.ts source:template",
+    "validate:fixtures": "tsx src/cli.ts validate:fixtures",
+    "materials:generate": "tsx src/cli.ts materials:generate",
+    "sync:content-system": "tsx src/cli.ts sync:content-system",
+    "material:intake-link": "tsx src/cli.ts material:intake-link",
+    "material:export-source-items": "tsx src/cli.ts material:export-source-items",
+    "material:digest-sources": "tsx src/cli.ts material:digest-sources",
+    "material:aggregate-cards": "tsx src/cli.ts material:aggregate-cards",
+    "material:process": "tsx src/cli.ts material:process",
+    "material:run": "tsx src/cli.ts material:run",
+    "material:config-status": "tsx src/cli.ts material:config-status",
+    "workflow:hotspots": "tsx src/cli.ts workflow:hotspots",
+    "workflow:subscriptions": "tsx src/cli.ts workflow:subscriptions",
+    "material:from-link": "tsx src/cli.ts material:from-link",
+    "report:daily": "tsx src/cli.ts report:daily",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run test && npm run validate:fixtures"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^1.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.7"
+  }
+}

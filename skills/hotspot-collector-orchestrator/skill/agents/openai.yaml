@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hotspot Collector Orchestrator"
+  short_description: "Route Hotspot Collector tasks."
+  default_prompt: "Use Hotspot Collector to route and run the right collection workflow."

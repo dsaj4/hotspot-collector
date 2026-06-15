@@ -1,0 +1,4 @@
+interface:
+  display_name: "subscription-material-collection"
+  short_description: "Operate subscription-material-collection workflows"
+  default_prompt: "Use $subscription-material-collection to run this workflow."

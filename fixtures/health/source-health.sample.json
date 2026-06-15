@@ -1,0 +1,16 @@
+[
+  {
+    "sourceId": "github-trending",
+    "status": "ok",
+    "checkedAt": "2026-05-28T09:00:00.000Z",
+    "provider": "html-public",
+    "itemCount": 1
+  },
+  {
+    "sourceId": "google-news-ai",
+    "status": "ok",
+    "checkedAt": "2026-05-28T09:00:00.000Z",
+    "provider": "google-news-rss",
+    "itemCount": 1
+  }
+]

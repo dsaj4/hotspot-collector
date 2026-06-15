@@ -1,0 +1,4 @@
+interface:
+  display_name: "material-hub-pipeline"
+  short_description: "Operate material-hub-pipeline workflows"
+  default_prompt: "Use $material-hub-pipeline to run this workflow."

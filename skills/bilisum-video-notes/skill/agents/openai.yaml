@@ -1,0 +1,4 @@
+interface:
+  display_name: "bilisum-video-notes"
+  short_description: "Operate bilisum-video-notes workflows"
+  default_prompt: "Use $bilisum-video-notes to run this workflow."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "hotspot-intelligence-collection"
+  short_description: "Operate hotspot-intelligence-collection workflows"
+  default_prompt: "Use $hotspot-intelligence-collection to run this workflow."

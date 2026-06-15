@@ -1,0 +1,4 @@
+interface:
+  display_name: "Material Hub IMA Sync"
+  short_description: "Explicitly reconcile local cards with IMA"
+  default_prompt: "Use $material-hub-ima-sync to inventory the fixed IMA knowledge base before syncing."
