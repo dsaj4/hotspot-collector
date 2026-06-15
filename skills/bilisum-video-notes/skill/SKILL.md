@@ -35,6 +35,19 @@ npm.cmd run video:notes-bilibili-list -- --input=<url-list-or-observation-json> 
 
 5. Return `learningPackageRef` for a single video, or `batchIndexRef` plus each result for a batch. Include openable transcript, knowledge note, illustrated note, enhanced note, mind map, visual context, and screenshots when available.
 
+## Bilibili Risk Control
+
+If `video:notes-bilibili` fails with `BiliSum HTTP 400` and the detail mentions `HTTP 412` or `风控`, treat it as a Bilibili access/login/network state problem, not as a note-generation or repository-structure failure.
+
+Next actions:
+
+- Report the exact failing command and the 412 detail.
+- Run `npm.cmd run video:bilisum-status` to verify the external BiliSum service path and runtime.
+- Run `npm.cmd run browser:status -- --platform=bilibili` to check whether an isolated Bilibili browser session exists.
+- If the user approves using local login state, start or refresh the isolated Bilibili CDP session, log in normally, then run `npm.cmd run video:setup-bilisum` so BiliSum can use the captured cookies file.
+- Do not bypass login walls, CAPTCHA, anti-bot controls, paywalls, or platform access restrictions.
+- Do not print cookies, SESSDATA, access tokens, or generated cookie file contents.
+
 ## Rules
 
 - Prefer Bilibili AI subtitles, then platform/yt-dlp subtitles.
