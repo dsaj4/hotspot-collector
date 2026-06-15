@@ -28,6 +28,7 @@ E:\Project\hotspot-collector-external\
 origin:   https://github.com/dsaj4/BiliSum.git
 upstream: https://github.com/lycohana/BiliSum.git
 branch:   hotspot/ai-subtitle
+head:     5f5767c test: cover bilibili ai subtitle fallback
 ```
 
 Configure the integration with:
@@ -43,6 +44,8 @@ BILISUM_APP_DATA_ROOT=E:/Project/hotspot-collector-data/bilisum
 origin:   https://github.com/dsaj4/wewe-rss.git
 upstream: https://github.com/cooderl/wewe-rss.git
 branch:   hotspot/wechat-official-account-adapter
+heads:    0b5830f chore: ignore python cache files
+          472f872 feat: add hotspot official account export
 ```
 
 Configure the integration with:
@@ -75,9 +78,44 @@ git -C E:\Project\hotspot-collector-external\BiliSum remote -v
 git -C E:\Project\hotspot-collector-external\wewe-rss remote -v
 ```
 
+Then verify the intended branches:
+
+```powershell
+git -C E:\Project\hotspot-collector-external\BiliSum status --short --branch
+git -C E:\Project\hotspot-collector-external\wewe-rss status --short --branch
+```
+
+## Updating From Upstream
+
+Pull upstream changes into the fork branch deliberately. Keep `master` or `main` close to upstream, and keep Hotspot-specific changes on the named `hotspot/*` branches.
+
+BiliSum:
+
+```powershell
+git -C E:\Project\hotspot-collector-external\BiliSum fetch upstream
+git -C E:\Project\hotspot-collector-external\BiliSum checkout hotspot/ai-subtitle
+git -C E:\Project\hotspot-collector-external\BiliSum merge upstream/master
+```
+
+WeWe RSS:
+
+```powershell
+git -C E:\Project\hotspot-collector-external\wewe-rss fetch upstream
+git -C E:\Project\hotspot-collector-external\wewe-rss checkout hotspot/wechat-official-account-adapter
+git -C E:\Project\hotspot-collector-external\wewe-rss merge upstream/main
+```
+
+If the upstream default branch differs, inspect it first:
+
+```powershell
+git -C E:\Project\hotspot-collector-external\BiliSum remote show upstream
+git -C E:\Project\hotspot-collector-external\wewe-rss remote show upstream
+```
+
 ## Repository Boundaries
 
 - Commit and push BiliSum changes in the BiliSum repository.
 - Commit and push WeWe RSS changes in the WeWe RSS repository.
 - Commit only integration code, docs, config templates, and tests in `hotspot-collector`.
 - Do not vendor either external application back into this repository.
+- Do not move generated runtime data from `HOTSPOT_DATA_ROOT` into any of the three repositories.

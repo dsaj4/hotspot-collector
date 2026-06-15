@@ -24,7 +24,7 @@ Principle: prefer real, verifiable, low-risk source access. Public and RSS-compa
 
 ## Deprecated Entries
 
-The old built-in Bilibili dynamic/following/subtitle collection path is being removed during the structure migration. Future Bilibili acquisition should use visible URL selection through `social-browser-collection`, followed by BiliSum for video understanding.
+The old built-in Bilibili dynamic/following/subtitle collection path is deprecated and scheduled for deletion during the structure migration. Future Bilibili acquisition should use visible URL selection through `social-browser-collection`, followed by BiliSum for video understanding.
 
 Deprecated source IDs and commands:
 
@@ -54,6 +54,20 @@ official_account_articles.csv
 ```
 
 Avoid company-specific names for new work.
+
+Primary command:
+
+```text
+collect:official-accounts
+```
+
+Temporary compatibility alias:
+
+```text
+collect:wechat
+```
+
+Do not introduce new `company_*`, `companies`, or company-only concepts unless a future source truly requires company-specific metadata.
 
 ## Bilibili Video Notes
 

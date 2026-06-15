@@ -19,6 +19,21 @@ External applications are not submodules:
 
 Runtime artifacts keep stable logical references such as `data/raw/...` and `reports/feeds/...`, but default writes are redirected to `E:/Project/hotspot-collector-data` on this workstation.
 
+## Repository Boundary
+
+This repository is the orchestration layer. It owns:
+
+- TypeScript collection, normalization, workflow, scheduler, and material-pipeline code.
+- Tests, fixtures, config templates, docs, scripts, and project-specific skills.
+- Integration points to external applications.
+
+It does not own:
+
+- Runtime data, generated reports, generated notes, screenshots, video/audio downloads, cookies, browser profiles, or logs.
+- Forked upstream applications. BiliSum and WeWe RSS are maintained in separate local Git repositories under `HOTSPOT_EXTERNAL_ROOT`.
+
+The current migration branch still contains legacy Bilibili following/subtitle collector code. The maintained target path is Bilibili URL acquisition through `social-browser-collection`, then video understanding through external BiliSum.
+
 ## Install
 
 ```text
@@ -42,7 +57,6 @@ Core roots:
 Collection and integration variables:
 
 - `BILIBILI_COOKIE`: optional explicit cookie for allowed Bilibili API paths.
-- `BILIBILI_FOLLOWING_LIMIT`: followed-UP batch limit, default `20`.
 - `WECHAT_RSS_BASE_URL`: local WeWe RSS URL, default `http://127.0.0.1:4000`.
 - `WECHAT_RSS_FEEDS`: comma-separated WeWe RSS feed ids, default `all`.
 - `WECHAT_RSS_LIMIT`: max articles per WeChat feed, default `30`.
@@ -89,7 +103,9 @@ npm.cmd run feed:generate
 npm.cmd run report:daily
 ```
 
-Some old Bilibili subscription/subtitle commands still exist during the migration branch, but the target design is to acquire Bilibili URLs through `social-browser-collection` and process videos through BiliSum.
+`collect:wechat` is a compatibility alias for `collect:official-accounts`. Prefer the official-account naming in new docs and automation.
+
+Deprecated migration-era Bilibili commands may still appear in `package.json` until the next cleanup phase. Do not build new workflows on `discover:bilibili-followings`, `collect:subscriptions:followings`, or `collect:bilibili-subtitles`.
 
 Development checks:
 
@@ -126,6 +142,12 @@ upstream: https://github.com/lycohana/BiliSum.git
 branch:   hotspot/ai-subtitle
 ```
 
+Local verified branch head:
+
+```text
+5f5767c test: cover bilibili ai subtitle fallback
+```
+
 WeWe RSS fork:
 
 ```text
@@ -133,6 +155,13 @@ path:     E:/Project/hotspot-collector-external/wewe-rss
 origin:   https://github.com/dsaj4/wewe-rss.git
 upstream: https://github.com/cooderl/wewe-rss.git
 branch:   hotspot/wechat-official-account-adapter
+```
+
+Local verified branch heads:
+
+```text
+0b5830f chore: ignore python cache files
+472f872 feat: add hotspot official account export
 ```
 
 See [docs/operations/external-dependencies.md](docs/operations/external-dependencies.md).
@@ -167,6 +196,7 @@ Collection does not automatically sync to IMA. IMA synchronization is explicit a
 
 ## Repository Docs
 
+- [Repository guide](docs/repository-guide.md)
 - [Architecture overview](docs/architecture/overview.md)
 - [Data root](docs/operations/data-root.md)
 - [External dependencies](docs/operations/external-dependencies.md)

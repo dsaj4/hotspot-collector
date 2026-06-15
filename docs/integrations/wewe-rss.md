@@ -9,9 +9,11 @@ path:     E:/Project/hotspot-collector-external/wewe-rss
 origin:   https://github.com/dsaj4/wewe-rss.git
 upstream: https://github.com/cooderl/wewe-rss.git
 branch:   hotspot/wechat-official-account-adapter
+heads:    0b5830f chore: ignore python cache files
+          472f872 feat: add hotspot official account export
 ```
 
-The custom branch should contain only the official-account export behavior needed by Hotspot Collector. Old local Prisma/schema drift from the previous wrapper should not be carried forward unless it is explicitly required.
+The custom branch contains the standalone official-account export behavior needed by Hotspot Collector. Old local Prisma/schema drift from the previous wrapper should not be carried forward unless it is explicitly required.
 
 ## Configuration
 
@@ -57,6 +59,25 @@ The external fork also contains a standalone export tool:
 
 ```text
 E:/Project/hotspot-collector-external/wewe-rss/tools/hotspot-official-account-export
+```
+
+The tool exports:
+
+```text
+official_account_articles.json
+official_account_articles.csv
+```
+
+External verification from the migration pass:
+
+```text
+python -m pytest tools/hotspot-official-account-export/test_official_account_export.py
+```
+
+Expected result:
+
+```text
+3 passed
 ```
 
 ## Boundaries

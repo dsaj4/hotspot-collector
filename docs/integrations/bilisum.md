@@ -9,6 +9,7 @@ path:     E:/Project/hotspot-collector-external/BiliSum
 origin:   https://github.com/dsaj4/BiliSum.git
 upstream: https://github.com/lycohana/BiliSum.git
 branch:   hotspot/ai-subtitle
+head:     5f5767c test: cover bilibili ai subtitle fallback
 ```
 
 `master` should remain close to upstream. Hotspot-specific changes belong on `hotspot/ai-subtitle`.
@@ -33,9 +34,9 @@ npm.cmd run video:notes-bilibili -- --url=https://www.bilibili.com/video/BV1tfoN
 npm.cmd run video:notes-bilibili-list -- --input=E:\path\to\bilibili-url-list.json --limit=10
 ```
 
-## Target Custom Behavior
+## Custom Behavior
 
-The custom BiliSum branch should try platform subtitles before ASR:
+The custom BiliSum branch tries platform subtitles before ASR:
 
 1. Fetch Bilibili UP-provided subtitles when available.
 2. Fetch Bilibili AI subtitles when available and allowed by normal platform access.
@@ -44,9 +45,22 @@ The custom BiliSum branch should try platform subtitles before ASR:
 
 This fixes the previous problem where video notes could become too coarse because the pipeline lacked enough transcript/visual grounding.
 
+External verification already covered the subtitle fallback path:
+
+```text
+uv run --all-packages pytest tests/unit/test_bilibili_subtitle.py tests/unit/test_real_pipeline_runner.py
+```
+
+Expected result from the last migration pass:
+
+```text
+40 passed
+```
+
 ## Boundaries
 
 - Do not bypass login walls, anti-bot controls, paywalls, or platform restrictions.
 - Cookie use must be explicit local configuration and disabled by default.
 - Generated video packages belong under `HOTSPOT_DATA_ROOT`, not this repository.
 - Full-fidelity video-note reconstruction is a separate requirement, documented in `docs/requirements/full-fidelity-video-notes.md`.
+- Before accepting a smoke test, confirm that port `3838` is served by this external fork and not by an old temporary checkout.

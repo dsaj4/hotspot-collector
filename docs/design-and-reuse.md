@@ -1,6 +1,6 @@
 # Design And Reuse
 
-Updated: 2026-05-28
+Updated: 2026-06-15
 
 This project follows the installed Karpathy-style engineering guidelines: state assumptions, keep implementation verifiable, preserve raw evidence, and represent unstable sources as source health instead of fake success.
 
@@ -127,9 +127,7 @@ Credentialed collection is opt-in:
 
 ## Next Steps
 
-1. Finish external BiliSum custom branch for platform subtitle and AI subtitle fallback.
-2. Finish external WeWe RSS official-account export branch.
-3. Remove deprecated Bilibili dynamic/following/subtitle collectors from this repository.
-4. Keep only project-specific skills in this repository.
-5. Reorganize source and tests by functional domain.
-6. Run a real BiliSum smoke test against `BV1tfoNBqEtN`.
+1. Remove deprecated Bilibili dynamic/following/subtitle collectors from this repository.
+2. Reorganize source and tests by functional domain after the deprecated path is removed.
+3. Run a real BiliSum smoke test against `BV1tfoNBqEtN` after confirming port `3838` is served by the external BiliSum fork.
+4. Push the final migration branch after `npm.cmd run check` passes.

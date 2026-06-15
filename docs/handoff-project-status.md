@@ -2,7 +2,7 @@
 
 Updated: 2026-06-15
 
-This page summarizes the current migration target. Historical handoff details from the pre-migration layout were removed because they described vendored apps and in-repository runtime data.
+This page summarizes the current repository state and the remaining migration work. Historical handoff details from the pre-migration layout were removed because they described vendored apps and in-repository runtime data.
 
 ## Repository
 
@@ -13,6 +13,14 @@ branch: codex/project-structure-migration
 ```
 
 The repository is a source and orchestration repo. It should contain code, tests, fixtures, config templates, docs, scripts, and project-specific skills.
+
+Current branch status at the documentation pass:
+
+```text
+main repo: clean working tree before docs edits
+BiliSum:   hotspot/ai-subtitle tracks origin/hotspot/ai-subtitle
+WeWe RSS:  hotspot/wechat-official-account-adapter tracks origin/hotspot/wechat-official-account-adapter
+```
 
 ## External Roots
 
@@ -37,6 +45,7 @@ BiliSum:
 origin:   https://github.com/dsaj4/BiliSum.git
 upstream: https://github.com/lycohana/BiliSum.git
 branch:   hotspot/ai-subtitle
+head:     5f5767c test: cover bilibili ai subtitle fallback
 ```
 
 WeWe RSS:
@@ -45,6 +54,8 @@ WeWe RSS:
 origin:   https://github.com/dsaj4/wewe-rss.git
 upstream: https://github.com/cooderl/wewe-rss.git
 branch:   hotspot/wechat-official-account-adapter
+heads:    0b5830f chore: ignore python cache files
+          472f872 feat: add hotspot official account export
 ```
 
 ## Active Workflows
@@ -64,15 +75,32 @@ Completed:
 - External data and dependency root support has been added.
 - Runtime outputs are routed through the external data root by default on this workstation.
 - External BiliSum and WeWe RSS checkout locations are documented.
+- BiliSum is maintained as `dsaj4/BiliSum:hotspot/ai-subtitle`.
+- BiliSum AI subtitle fallback is covered by external unit tests.
+- WeWe RSS is maintained as `dsaj4/wewe-rss:hotspot/wechat-official-account-adapter`.
+- WeWe RSS official-account export exists in the external fork.
+- The old in-repository `company-wechat-rss/` wrapper has been deleted.
+- Generic skills were removed from this repository; only project-specific skills remain.
 
 Still in progress:
 
-- BiliSum custom branch implementation for Bilibili AI subtitle fallback.
-- WeWe RSS official-account export migration.
-- Deletion of the old in-repository WeWe wrapper.
-- Deletion of old Bilibili dynamic/following/subtitle collectors.
-- Skill cleanup and source/test tree reorganization.
+- Deletion of old Bilibili dynamic/following/subtitle collectors and their scheduler/tests.
+- Source/test tree reorganization after deprecated collector removal.
 - Real smoke test with `BV1tfoNBqEtN`.
+
+Known caution:
+
+- A local service may already be listening on BiliSum port `3838`. Confirm it is running from `E:/Project/hotspot-collector-external/BiliSum`, not the old `.tmp-bilisum-analysis` runtime, before treating a video-note smoke test as valid.
+
+Deprecated entries still present until the next cleanup phase:
+
+```text
+discover:bilibili-followings
+collect:subscriptions:followings
+collect:bilibili-subtitles
+src/vendor/rssworker-bilibili/
+src/adapters/subscriptions/bilibili*.ts
+```
 
 ## Verification
 
@@ -89,4 +117,11 @@ Use this before final push:
 ```text
 npm.cmd run check
 git status --ignored --short
+```
+
+Expected final push target:
+
+```text
+https://github.com/dsaj4/hotspot-collector.git
+branch: codex/project-structure-migration
 ```
