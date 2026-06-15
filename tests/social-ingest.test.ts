@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { ingestBrowserObservation } from "../src/social/ingest.js";
 import { dateFolder } from "../src/core/time.js";
+import { artifactPath } from "../src/core/paths.js";
 
 describe("browser social ingest", () => {
   it("writes social truth and compatibility output without duplicating repeated observations", async () => {
@@ -23,8 +24,8 @@ describe("browser social ingest", () => {
       await ingestBrowserObservation(observation);
       await ingestBrowserObservation(observation);
       const day = dateFolder();
-      const social = await readFile(path.join(root, `data/normalized/${day}/social-items.jsonl`), "utf8");
-      const subscriptions = await readFile(path.join(root, `data/normalized/${day}/subscriptions.jsonl`), "utf8");
+      const social = await readFile(artifactPath(`data/normalized/${day}/social-items.jsonl`), "utf8");
+      const subscriptions = await readFile(artifactPath(`data/normalized/${day}/subscriptions.jsonl`), "utf8");
       expect(social.trim().split(/\r?\n/)).toHaveLength(1);
       expect(subscriptions.trim().split(/\r?\n/)).toHaveLength(1);
     } finally {
@@ -67,7 +68,7 @@ describe("browser social ingest", () => {
         message: "Login expired"
       });
       expect(unavailable.fallbackRequired).toBe(true);
-      const health = JSON.parse(await readFile(path.join(root, "data/health/source-health.json"), "utf8")) as Array<{
+      const health = JSON.parse(await readFile(artifactPath("data/health/source-health.json"), "utf8")) as Array<{
         lastSuccessAt?: string;
         meetsSuccessSla?: boolean;
       }>;

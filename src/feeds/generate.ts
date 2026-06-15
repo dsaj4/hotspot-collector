@@ -2,6 +2,7 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { HotspotItem, SubscriptionItem } from "../types.js";
 import { generateJsonFeed, generateRss, hotspotFeedItem, subscriptionFeedItem, type FeedItem } from "./format.js";
+import { artifactPath } from "../core/paths.js";
 
 export type FeedKind = "subscriptions" | "hotspots";
 
@@ -12,10 +13,8 @@ type FeedOutput = {
   jsonRef: string;
 };
 
-const rootDir = process.cwd();
-
 async function latestNormalizedFile(kind: FeedKind): Promise<string | null> {
-  const dir = path.join(rootDir, "data", "normalized");
+  const dir = artifactPath(path.join("data", "normalized"));
   let dates: string[] = [];
   try {
     dates = (await readdir(dir, { withFileTypes: true })).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort().reverse();
@@ -47,7 +46,7 @@ async function readJsonl<T>(filePath: string | null): Promise<T[]> {
 
 async function writeFeedFiles(kind: FeedKind, items: FeedItem[]): Promise<FeedOutput> {
   const relDir = path.join("reports", "feeds");
-  const absDir = path.join(rootDir, relDir);
+  const absDir = artifactPath(relDir);
   await mkdir(absDir, { recursive: true });
 
   const title = kind === "subscriptions" ? "Hotspot Collector Subscriptions" : "Hotspot Collector Hotspots";
@@ -57,8 +56,8 @@ async function writeFeedFiles(kind: FeedKind, items: FeedItem[]): Promise<FeedOu
   const rssRef = path.join(relDir, `${kind}.rss`).replaceAll("\\", "/");
   const jsonRef = path.join(relDir, `${kind}.json`).replaceAll("\\", "/");
 
-  await writeFile(path.join(rootDir, rssRef), generateRss(items, { title, description, link }), "utf8");
-  await writeFile(path.join(rootDir, jsonRef), generateJsonFeed(items, { title, description, link }), "utf8");
+  await writeFile(artifactPath(rssRef), generateRss(items, { title, description, link }), "utf8");
+  await writeFile(artifactPath(jsonRef), generateJsonFeed(items, { title, description, link }), "utf8");
   return { kind, itemCount: items.length, rssRef, jsonRef };
 }
 

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { artifactPath } from "../core/paths.js";
 
 export type BiliSumLocalConfig = {
   projectRoot?: string;
@@ -10,7 +11,9 @@ export type BiliSumLocalConfig = {
 };
 
 export function bilisumLocalConfigPath(rootDir = process.cwd()): string {
-  return path.join(rootDir, "data", "secrets", "bilisum.json");
+  return rootDir === process.cwd()
+    ? artifactPath(path.join("data", "secrets", "bilisum.json"))
+    : path.join(rootDir, "data", "secrets", "bilisum.json");
 }
 
 export function readBiliSumLocalConfig(rootDir = process.cwd()): BiliSumLocalConfig {
@@ -21,4 +24,3 @@ export function readBiliSumLocalConfig(rootDir = process.cwd()): BiliSumLocalCon
     return {};
   }
 }
-

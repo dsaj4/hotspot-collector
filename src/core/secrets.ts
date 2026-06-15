@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { artifactPath } from "./paths.js";
 
 export type SecretType = "cookie" | "token" | "note";
 
@@ -20,7 +21,9 @@ export type SecretStatus = {
 };
 
 function secretsFile(rootDir = process.cwd()): string {
-  return path.join(rootDir, "data", "secrets", "credentials.json");
+  return rootDir === process.cwd()
+    ? artifactPath(path.join("data", "secrets", "credentials.json"))
+    : path.join(rootDir, "data", "secrets", "credentials.json");
 }
 
 function hashSuffix(value: string): string {

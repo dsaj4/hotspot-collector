@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { artifactPath } from "./paths.js";
 
 export type BrowserSessionStatus = {
   platform: string;
@@ -13,7 +14,9 @@ export type BrowserSessionStatus = {
 };
 
 function sessionDir(platform: string, rootDir = process.cwd()): string {
-  return path.join(rootDir, "data", "sessions", platform.toLowerCase());
+  return rootDir === process.cwd()
+    ? artifactPath(path.join("data", "sessions", platform.toLowerCase()))
+    : path.join(rootDir, "data", "sessions", platform.toLowerCase());
 }
 
 function metadataPath(platform: string, rootDir = process.cwd()): string {

@@ -11,6 +11,7 @@ import {
 import { collectBilibiliSubtitlesFromLatest } from "../src/collectors/bilibili-subtitles.js";
 import { appendVideoTranscripts } from "../src/core/storage.js";
 import { dateFolder } from "../src/core/time.js";
+import { artifactPath } from "../src/core/paths.js";
 import { decodeSubtitleTracks, normalizeSubtitleBody } from "../src/adapters/subscriptions/bilibili-player-subtitles.js";
 
 describe("Bilibili subtitles", () => {
@@ -140,11 +141,11 @@ hello
       expect(result.transcriptCount).toBe(1);
       const outputDay = dateFolder();
       expect(result.normalizedRefs).toContain(`data/normalized/${outputDay}/video-transcripts.jsonl`);
-      const output = await readFile(path.join(root, "data", "normalized", outputDay, "video-transcripts.jsonl"), "utf8");
+      const output = await readFile(artifactPath(`data/normalized/${outputDay}/video-transcripts.jsonl`), "utf8");
       await appendVideoTranscripts([JSON.parse(output.trim())]);
-      const dedupedOutput = await readFile(path.join(root, "data", "normalized", outputDay, "video-transcripts.jsonl"), "utf8");
+      const dedupedOutput = await readFile(artifactPath(`data/normalized/${outputDay}/video-transcripts.jsonl`), "utf8");
       expect(dedupedOutput.trim().split(/\r?\n/)).toHaveLength(1);
-      expect(await readFile(path.join(root, "data", "normalized", outputDay, "video-transcripts.jsonl"), "utf8")).toContain("热门字幕");
+      expect(await readFile(artifactPath(`data/normalized/${outputDay}/video-transcripts.jsonl`), "utf8")).toContain("热门字幕");
     } finally {
       process.chdir(previousCwd);
     }

@@ -3,6 +3,7 @@ import path from "node:path";
 import type { HotspotItem, SocialItem, SourceHealth, SubscriptionItem, VideoTranscriptItem } from "../types.js";
 import { dateFolder, safeTimestamp } from "./time.js";
 import { sourceSafeName } from "./hash.js";
+import { artifactPath } from "./paths.js";
 
 async function ensureDir(dir: string): Promise<void> {
   await mkdir(dir, { recursive: true });
@@ -10,14 +11,14 @@ async function ensureDir(dir: string): Promise<void> {
 
 export async function writeRawSnapshot(sourceId: string, payload: unknown): Promise<string> {
   const rel = path.join("data", "raw", dateFolder(), `${sourceSafeName(sourceId)}-${safeTimestamp()}.json`);
-  const abs = path.join(process.cwd(), rel);
+  const abs = artifactPath(rel);
   await ensureDir(path.dirname(abs));
   await writeFile(abs, JSON.stringify(payload, null, 2), "utf8");
   return rel.replaceAll("\\", "/");
 }
 
 export async function appendJsonl<T>(relPath: string, items: T[]): Promise<string> {
-  const abs = path.join(process.cwd(), relPath);
+  const abs = artifactPath(relPath);
   await ensureDir(path.dirname(abs));
   if (!items.length) {
     await writeFile(abs, "", { encoding: "utf8", flag: "a" });
@@ -29,7 +30,7 @@ export async function appendJsonl<T>(relPath: string, items: T[]): Promise<strin
 }
 
 export async function appendJsonlUnique<T extends { dedupeKey: string }>(relPath: string, items: T[]): Promise<string> {
-  const abs = path.join(process.cwd(), relPath);
+  const abs = artifactPath(relPath);
   const existing = new Set<string>();
   try {
     const text = await readFile(abs, "utf8");
@@ -61,7 +62,7 @@ export async function appendSocialItems(items: SocialItem[]): Promise<string> {
 
 export async function writeHealth(health: SourceHealth[], pruneSourceIds: string[] = []): Promise<string> {
   const rel = path.join("data", "health", "source-health.json");
-  const abs = path.join(process.cwd(), rel);
+  const abs = artifactPath(rel);
   await ensureDir(path.dirname(abs));
 
   let previous: SourceHealth[] = [];
@@ -92,7 +93,7 @@ export async function writeHealth(health: SourceHealth[], pruneSourceIds: string
 
 export async function writeReportPlaceholder(): Promise<string> {
   const rel = path.join("reports", "daily", `${dateFolder()}.json`);
-  const abs = path.join(process.cwd(), rel);
+  const abs = artifactPath(rel);
   await ensureDir(path.dirname(abs));
   await writeFile(
     abs,
