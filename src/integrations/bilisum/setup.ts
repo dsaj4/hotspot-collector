@@ -1,8 +1,9 @@
 ﻿import { randomBytes } from "node:crypto";
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { access, appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
+import { promisify } from "node:util";
 import { bilibiliCookie, bilisumAppDataRoot, bilisumProjectRoot, deepseekApiKey, deepseekBaseUrl, deepseekModel } from "../../config.js";
 import { getSecret } from "../../core/secrets.js";
 import { dataPath, externalPath } from "../../core/paths.js";
@@ -14,6 +15,7 @@ type SetupOptions = {
   baseUrl?: string;
   start?: boolean;
   waitMs?: number;
+  secretLookup?: (name: string) => Promise<string | null>;
 };
 
 export type BiliSumSetupResult = {
@@ -24,9 +26,13 @@ export type BiliSumSetupResult = {
   accessTokenConfigured: boolean;
   serviceStatus: "running" | "started" | "unavailable";
   health?: unknown;
+  llmConfigured: boolean;
+  settingsUpdated: boolean;
   warnings: string[];
   configRef: string;
 };
+
+const execFileAsync = promisify(execFile);
 
 function defaultCandidates(): string[] {
   return [
@@ -69,6 +75,27 @@ async function health(baseUrl: string, timeoutMs = 3000): Promise<unknown | null
   }
 }
 
+async function requestJson(baseUrl: string, pathName: string, accessToken: string, init: RequestInit = {}, timeoutMs = 5000): Promise<Record<string, unknown> | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(init.headers as Record<string, string> | undefined)
+    };
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+    const response = await fetch(`${baseUrl}${pathName}`, { ...init, headers, signal: controller.signal });
+    if (!response.ok) return null;
+    const value = await response.json();
+    return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function waitForHealth(baseUrl: string, waitMs: number): Promise<unknown | null> {
   const started = Date.now();
   while (Date.now() - started <= waitMs) {
@@ -102,6 +129,83 @@ async function writeBiliSumEnv(projectRoot: string, values: Record<string, strin
   }
 }
 
+async function readBitwardenSecret(name: string): Promise<string | null> {
+  if (process.env.VITEST || process.env.NODE_ENV === "test" || process.env.HOTSPOT_DISABLE_BITWARDEN_SECRETS === "1") return null;
+  const script = "C:\\Users\\Administrator\\.secrets\\get-bitwarden-secret.ps1";
+  try {
+    await access(script);
+    const { stdout } = await execFileAsync(
+      "powershell.exe",
+      ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script, "-Name", name, "-ProjectPath", process.cwd()],
+      { timeout: 60_000, windowsHide: true }
+    );
+    const value = stdout.trim();
+    return value ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+async function readKeePassSecretFromBroker(name: string): Promise<string | null> {
+  if (process.env.VITEST || process.env.NODE_ENV === "test" || process.env.HOTSPOT_DISABLE_LOCAL_SECRET_BROKER === "1") return null;
+  const script = "C:\\Users\\Administrator\\.secrets\\get-local-secret.ps1";
+  try {
+    await access(script);
+    const { stdout } = await execFileAsync(
+      "powershell.exe",
+      ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script, "-Name", name],
+      { timeout: 120_000, windowsHide: true }
+    );
+    const value = stdout.trim();
+    return value ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolveDeepSeekApiKey(secretLookup?: (name: string) => Promise<string | null>): Promise<string> {
+  if (deepseekApiKey) return deepseekApiKey;
+  const lookedUp = await secretLookup?.("DEEPSEEK_API_KEY");
+  if (lookedUp) return lookedUp;
+  const bitwardenSecret = await readBitwardenSecret("DEEPSEEK_API_KEY");
+  if (bitwardenSecret) return bitwardenSecret;
+  const storedDeepSeek = await getSecret("deepseek");
+  if (storedDeepSeek?.value) return storedDeepSeek.value;
+  return await readKeePassSecretFromBroker("DEEPSEEK_API_KEY") ?? "";
+}
+
+async function findExistingBiliSumCookieFile(appDataRoot: string): Promise<string | null> {
+  const candidates = [
+    path.join(appDataRoot, "cookies", "bilibili.txt"),
+    path.join(appDataRoot, "data", "cookies", "bilibili.txt")
+  ];
+  for (const cookieFile of candidates) {
+    try {
+      await access(cookieFile);
+      return cookieFile;
+    } catch {
+      // Continue looking for cookies written by another BiliSum login flow.
+    }
+  }
+  return null;
+}
+
+async function updateBiliSumSettings(baseUrl: string, accessToken: string, env: Record<string, string>): Promise<boolean> {
+  const payload = {
+    llm_enabled: env.VIDEO_SUM_LLM_ENABLED === "true",
+    llm_provider: "openai-compatible",
+    llm_base_url: env.VIDEO_SUM_LLM_BASE_URL,
+    llm_model: env.VIDEO_SUM_LLM_MODEL,
+    llm_api_key: env.VIDEO_SUM_LLM_API_KEY,
+    visual_evidence_base_url: env.VIDEO_SUM_LLM_BASE_URL,
+    visual_evidence_model: env.VIDEO_SUM_LLM_MODEL,
+    visual_evidence_api_key: env.VIDEO_SUM_LLM_API_KEY,
+    ytdlp_cookies_file: env.VIDEO_SUM_YTDLP_COOKIES_FILE
+  };
+  const response = await requestJson(baseUrl, "/api/v1/settings", accessToken, { method: "PUT", body: JSON.stringify(payload) }, 10_000);
+  return Boolean(response?.saved);
+}
+
 async function findFfmpegDir(): Promise<string> {
   const candidates = [
     process.env.VIDEO_SUM_FFMPEG_DIR,
@@ -132,10 +236,14 @@ export async function setupBiliSum(options: SetupOptions = {}): Promise<BiliSumS
   const baseUrl = options.baseUrl || existing.baseUrl || "http://127.0.0.1:3838";
   const warnings: string[] = [];
   const ffmpegDir = await findFfmpegDir();
-  const storedDeepSeek = await getSecret("deepseek");
-  const resolvedDeepSeekApiKey = deepseekApiKey || storedDeepSeek?.value || "";
+  const resolvedDeepSeekApiKey = await resolveDeepSeekApiKey(options.secretLookup);
   const cookieBridge = await exportBilibiliCdpCookies(appDataRoot);
-  if (cookieBridge.warning) warnings.push(cookieBridge.warning);
+  let cookieFile = cookieBridge.cookieFile;
+  if (!cookieFile) {
+    cookieFile = await findExistingBiliSumCookieFile(appDataRoot) ?? undefined;
+    if (cookieFile) warnings.push("Using existing BiliSum Bilibili cookie file from the app data root.");
+    else if (cookieBridge.warning) warnings.push(cookieBridge.warning);
+  }
   const env = {
     VIDEO_SUM_HOST: "127.0.0.1",
     VIDEO_SUM_PORT: new URL(baseUrl).port || "3838",
@@ -146,10 +254,10 @@ export async function setupBiliSum(options: SetupOptions = {}): Promise<BiliSumS
     VIDEO_SUM_LLM_MODEL: deepseekModel,
     VIDEO_SUM_LLM_API_KEY: resolvedDeepSeekApiKey,
     VIDEO_SUM_FFMPEG_DIR: ffmpegDir,
-    VIDEO_SUM_YTDLP_COOKIES_FILE: cookieBridge.cookieFile ?? ""
+    VIDEO_SUM_YTDLP_COOKIES_FILE: cookieFile ?? ""
   };
-  if (!resolvedDeepSeekApiKey) warnings.push("DeepSeek API key is not configured; save it with secrets:set --platform=deepseek --type=token, then rerun setup.");
-  if (!bilibiliCookie && !cookieBridge.cookieFile) warnings.push("Bilibili cookies are not configured; some Bilibili videos may be unavailable to BiliSum.");
+  if (!resolvedDeepSeekApiKey) warnings.push("DeepSeek API key is not configured; authorize DEEPSEEK_API_KEY in Bitwarden or save it with secrets:set --platform=deepseek --type=token, then rerun setup.");
+  if (!bilibiliCookie && !cookieFile) warnings.push("Bilibili cookies are not configured; some Bilibili videos may be unavailable to BiliSum.");
   if (!ffmpegDir) warnings.push("FFmpeg was not found; BiliSum visual evidence frame extraction will be unavailable.");
 
   const configRef = await writeLocalConfig({ projectRoot, baseUrl, accessToken, appDataRoot, configuredAt: new Date().toISOString() });
@@ -157,15 +265,42 @@ export async function setupBiliSum(options: SetupOptions = {}): Promise<BiliSumS
 
   const before = await health(baseUrl);
   if (before) {
-    return { configured: true, projectRoot, baseUrl, appDataRoot, accessTokenConfigured: true, serviceStatus: "running", health: before, warnings, configRef };
+    const settingsUpdated = await updateBiliSumSettings(baseUrl, accessToken, env);
+    if (!settingsUpdated) warnings.push("BiliSum is running, but its settings API could not be updated automatically.");
+    return {
+      configured: true,
+      projectRoot,
+      baseUrl,
+      appDataRoot,
+      accessTokenConfigured: true,
+      serviceStatus: "running",
+      health: before,
+      llmConfigured: Boolean(resolvedDeepSeekApiKey),
+      settingsUpdated,
+      warnings,
+      configRef
+    };
   }
   if (options.start === false) {
-    return { configured: true, projectRoot, baseUrl, appDataRoot, accessTokenConfigured: true, serviceStatus: "unavailable", warnings, configRef };
+    return {
+      configured: true,
+      projectRoot,
+      baseUrl,
+      appDataRoot,
+      accessTokenConfigured: true,
+      serviceStatus: "unavailable",
+      llmConfigured: Boolean(resolvedDeepSeekApiKey),
+      settingsUpdated: false,
+      warnings,
+      configRef
+    };
   }
 
   startBiliSum(projectRoot, env);
   const after = await waitForHealth(baseUrl, options.waitMs ?? 120_000);
   if (!after) warnings.push("BiliSum was started but did not become healthy before the setup timeout.");
+  const settingsUpdated = after ? await updateBiliSumSettings(baseUrl, accessToken, env) : false;
+  if (after && !settingsUpdated) warnings.push("BiliSum started, but its settings API could not be updated automatically.");
   return {
     configured: true,
     projectRoot,
@@ -174,6 +309,8 @@ export async function setupBiliSum(options: SetupOptions = {}): Promise<BiliSumS
     accessTokenConfigured: true,
     serviceStatus: after ? "started" : "unavailable",
     health: after ?? undefined,
+    llmConfigured: Boolean(resolvedDeepSeekApiKey),
+    settingsUpdated,
     warnings,
     configRef
   };
@@ -188,6 +325,7 @@ export async function bilisumSetupStatus(): Promise<Record<string, unknown>> {
     baseUrl,
     appDataRoot: config.appDataRoot ?? bilisumAppDataRoot,
     accessTokenConfigured: Boolean(config.accessToken),
-    serviceHealth: await health(baseUrl)
+    serviceHealth: await health(baseUrl),
+    serviceSettings: config.accessToken ? await requestJson(baseUrl, "/api/v1/settings", config.accessToken) : null
   };
 }

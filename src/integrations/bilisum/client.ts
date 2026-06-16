@@ -19,6 +19,9 @@ export type BiliSumTaskResult = {
   timeline?: Array<Record<string, unknown>>;
   chapter_groups?: Array<Record<string, unknown>>;
   artifacts?: Record<string, string>;
+  llm_prompt_tokens?: number | null;
+  llm_completion_tokens?: number | null;
+  llm_total_tokens?: number | null;
   mindmap_status?: string;
   mindmap_artifact_path?: string | null;
   visual_note_status?: string;

@@ -29,6 +29,24 @@ export type VideoProcessingResult = {
   acquisition: {
     transcriptKind: VideoTranscriptKind;
     provider: string;
+    transcriptSource?: {
+      provider: string;
+      source?: string;
+      lan?: string;
+      lanDoc?: string;
+      isAi?: boolean;
+      urlHost?: string;
+    };
+    llm?: {
+      enabled: boolean;
+      used: boolean;
+      provider?: string;
+      model?: string;
+      fallbackReason?: string;
+      promptTokens?: number;
+      completionTokens?: number;
+      totalTokens?: number;
+    };
     usedAsr: boolean;
     warnings: string[];
   };
@@ -39,6 +57,16 @@ export type VideoProcessingResult = {
   videoNote: {
     markdown: string;
     enhancedMarkdown?: string;
+    quality?: {
+      transcriptChars: number;
+      segmentCount: number;
+      noteChars: number;
+      enhancedNoteChars: number;
+      timelineCount: number;
+      chapterGroupCount: number;
+      visualEvidenceCount: number;
+      hasLlmTokenUsage: boolean;
+    };
   };
   mindmap?: {
     status: string;

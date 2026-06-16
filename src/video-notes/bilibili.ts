@@ -104,6 +104,16 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
 }
 
+function parseJsonRecord(value: unknown): Record<string, unknown> | undefined {
+  if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, unknown>;
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  try {
+    return asRecord(JSON.parse(value));
+  } catch {
+    return undefined;
+  }
+}
+
 export function extractBilibiliVideoId(url: string): string | null {
   const match = url.match(/bilibili\.com\/video\/(BV[0-9A-Za-z]+|av\d+)/i);
   return match?.[1] ?? null;
@@ -234,6 +244,62 @@ function normalizeTranscriptKind(provider: string, fallback: VideoTranscriptKind
   return fallback;
 }
 
+function normalizeTranscriptSource(result: BiliSumTaskResult): NonNullable<VideoProcessingResult["acquisition"]["transcriptSource"]> | undefined {
+  const metadata = parseJsonRecord(result.artifacts?.transcript_source_json) ?? parseJsonRecord(result.artifacts?.subtitle_metadata_json);
+  const provider = asString(result.artifacts?.transcript_provider) || asString(result.artifacts?.subtitle_provider) || asString(metadata?.provider);
+  if (!provider && !metadata) return undefined;
+  const lan = asString(metadata?.lan) || undefined;
+  const lanDoc = asString(metadata?.lan_doc) || asString(metadata?.lanDoc) || undefined;
+  const source = asString(metadata?.source) || undefined;
+  const urlHost = asString(metadata?.url_host) || asString(metadata?.urlHost) || undefined;
+  return {
+    provider: provider || "bilisum",
+    source,
+    lan,
+    lanDoc,
+    isAi: typeof metadata?.is_ai === "boolean" ? metadata.is_ai : typeof metadata?.isAi === "boolean" ? metadata.isAi : lan?.includes("ai-") || provider.includes("ai") || undefined,
+    urlHost
+  };
+}
+
+function normalizeLlmDiagnostics(result: BiliSumTaskResult): NonNullable<VideoProcessingResult["acquisition"]["llm"]> {
+  const metadata = parseJsonRecord(result.artifacts?.llm_diagnostics_json);
+  const promptTokens = asNumber(result.llm_prompt_tokens ?? metadata?.prompt_tokens ?? metadata?.promptTokens);
+  const completionTokens = asNumber(result.llm_completion_tokens ?? metadata?.completion_tokens ?? metadata?.completionTokens);
+  const totalTokens = asNumber(result.llm_total_tokens ?? metadata?.total_tokens ?? metadata?.totalTokens);
+  const enabled = typeof metadata?.enabled === "boolean" ? metadata.enabled : asString(result.artifacts?.llm_enabled) === "true" || Boolean(promptTokens || completionTokens || totalTokens);
+  return {
+    enabled,
+    used: Boolean(promptTokens || completionTokens || totalTokens || metadata?.used === true || asString(result.artifacts?.llm_used) === "true"),
+    provider: asString(metadata?.provider) || asString(result.artifacts?.llm_provider) || undefined,
+    model: asString(metadata?.model) || asString(result.artifacts?.llm_model) || undefined,
+    fallbackReason: asString(metadata?.fallback_reason) || asString(metadata?.fallbackReason) || asString(result.artifacts?.llm_fallback_reason) || undefined,
+    promptTokens,
+    completionTokens,
+    totalTokens
+  };
+}
+
+function noteQuality(input: {
+  transcriptText: string;
+  segments: TranscriptSegment[];
+  note: string;
+  enhancedNote: string;
+  result: BiliSumTaskResult;
+  visualEvidenceCount: number;
+}): NonNullable<VideoProcessingResult["videoNote"]["quality"]> {
+  return {
+    transcriptChars: input.transcriptText.length,
+    segmentCount: input.segments.length,
+    noteChars: input.note.length,
+    enhancedNoteChars: input.enhancedNote.length,
+    timelineCount: Array.isArray(input.result.timeline) ? input.result.timeline.length : 0,
+    chapterGroupCount: Array.isArray(input.result.chapter_groups) ? input.result.chapter_groups.length : 0,
+    visualEvidenceCount: input.visualEvidenceCount,
+    hasLlmTokenUsage: Boolean(input.result.llm_prompt_tokens || input.result.llm_completion_tokens || input.result.llm_total_tokens)
+  };
+}
+
 function summarizeMindmapNode(node: Record<string, unknown>, depth = 0): string[] {
   const label = asString(node.label).trim();
   const summary = asString(node.summary).trim();
@@ -332,11 +398,14 @@ function buildVideoResult(input: {
     : [];
   const transcriptText = asString(result.transcript_text).trim();
   const transcriptProvider = asString(result.artifacts?.transcript_provider) || asString(result.artifacts?.subtitle_provider) || "bilisum";
-  const transcriptKind = normalizeTranscriptKind(transcriptProvider, transcriptText ? "platform-subtitle" : "missing");
+  const transcriptSource = normalizeTranscriptSource(result);
+  const transcriptKind = normalizeTranscriptKind([transcriptProvider, transcriptSource?.lan, transcriptSource?.source].filter(Boolean).join(" "), transcriptText ? "platform-subtitle" : "missing");
+  const llm = normalizeLlmDiagnostics(result);
   const visualEvidence = normalizeVisualEvidence(input.visual);
   const enhanced = asString(input.visual?.enhanced_note_markdown).trim();
   const visualNote = asString(input.visual?.visual_note_markdown).trim();
   const knowledgeNote = asString(result.knowledge_note_markdown).trim();
+  const selectedNote = visualNote || knowledgeNote;
   const mindmapSummary = summarizeMindmap(input.mindmap?.mindmap);
   return {
     status: input.task.status === "completed" && transcriptText ? "completed" : "failed",
@@ -352,11 +421,17 @@ function buildVideoResult(input: {
     acquisition: {
       transcriptKind,
       provider: transcriptProvider,
+      transcriptSource,
+      llm,
       usedAsr: transcriptKind === "asr-transcript",
       warnings: input.warnings
     },
     transcript: { text: transcriptText, segments: bilisumSegments },
-    videoNote: { markdown: visualNote || knowledgeNote, enhancedMarkdown: enhanced || undefined },
+    videoNote: {
+      markdown: selectedNote,
+      enhancedMarkdown: enhanced || undefined,
+      quality: noteQuality({ transcriptText, segments: bilisumSegments, note: selectedNote, enhancedNote: enhanced, result, visualEvidenceCount: visualEvidence.length })
+    },
     mindmap: input.mindmap ? { status: input.mindmap.status, json: input.mindmap.mindmap, textSummary: mindmapSummary || undefined } : undefined,
     visualEvidence,
     artifacts: artifactsFrom(input.task, result, input.mindmap, input.visual)
@@ -391,7 +466,10 @@ export function formatVideoProcessingContent(result: VideoProcessingResult): str
     `Author: ${result.source.authorName ?? result.source.authorId ?? ""}`,
     `URL: ${result.source.url}`,
     `Transcript source: ${result.acquisition.transcriptKind} / ${result.acquisition.provider}`,
+    result.acquisition.transcriptSource ? `Transcript metadata: ${JSON.stringify(result.acquisition.transcriptSource)}` : "",
+    result.acquisition.llm ? `LLM: enabled=${result.acquisition.llm.enabled ? "yes" : "no"} used=${result.acquisition.llm.used ? "yes" : "no"} model=${result.acquisition.llm.model ?? ""}${result.acquisition.llm.fallbackReason ? ` fallback=${result.acquisition.llm.fallbackReason}` : ""}` : "",
     `ASR used: ${result.acquisition.usedAsr ? "yes" : "no"}`,
+    result.videoNote.quality ? `Quality: transcriptChars=${result.videoNote.quality.transcriptChars}; noteChars=${result.videoNote.quality.noteChars}; timeline=${result.videoNote.quality.timelineCount}; visuals=${result.videoNote.quality.visualEvidenceCount}` : "",
     result.acquisition.warnings.length ? `Warnings: ${result.acquisition.warnings.join(" | ")}` : "",
     "",
     "## Enhanced Video Note",
@@ -526,6 +604,9 @@ async function writeLearningPackageManifest(day: string, result: VideoProcessing
     source: result.source,
     status: result.status,
     transcriptKind: result.acquisition.transcriptKind,
+    transcriptSource: result.acquisition.transcriptSource,
+    llm: result.acquisition.llm,
+    noteQuality: result.videoNote.quality,
     mindmapStatus: result.mindmap?.status ?? "missing",
     visualEvidenceStatus: asString(visualContext?.status) || (result.visualEvidence.length ? "ready" : "missing"),
     visualEvidenceCount: result.visualEvidence.length,

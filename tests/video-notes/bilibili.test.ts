@@ -41,7 +41,17 @@ class FakeBiliSumClient extends BiliSumClient {
         knowledge_note_markdown: "## Knowledge Note\nThe author explains collection, organization, and card generation.",
         transcript_text: "This is a video about an AI toolchain.\nThe author shows the path from source material to cards.",
         segments: [{ start: "00:00:01", end: "00:00:03", text: "This is a video about an AI toolchain." }],
-        artifacts: { summary_path: "tasks/task-1/summary.json", visual_context_path: "tasks/task-1/visual_context.json" }
+        timeline: [{ title: "Opening", start: 1, summary: "The author frames the workflow." }],
+        chapter_groups: [{ title: "Workflow", start: 1, summary: "Collection to cards.", children: [] }],
+        llm_prompt_tokens: 123,
+        llm_completion_tokens: 456,
+        llm_total_tokens: 579,
+        artifacts: {
+          summary_path: "tasks/task-1/summary.json",
+          visual_context_path: "tasks/task-1/visual_context.json",
+          transcript_source_json: JSON.stringify({ provider: "bilibili-subtitle", source: "dm_view", lan: "ai-zh", lan_doc: "AI Chinese", is_ai: true, url_host: "i0.hdslb.com" }),
+          llm_diagnostics_json: JSON.stringify({ enabled: true, used: true, provider: "openai-compatible", model: "deepseek-test" })
+        }
       }
     };
   }
@@ -168,6 +178,10 @@ describe("BiliSum Bilibili video intake", () => {
       const saved = JSON.parse(await readFile(path.join(root, "data", "video-intake", "2026-06-13", path.basename(result.videoResultRef)), "utf8")) as VideoProcessingResult;
       expect(saved.visualEvidence[0]?.frameId).toBe("f0001");
       expect(saved.mindmap?.textSummary).toContain("Material processing hub");
+      expect(saved.acquisition.transcriptKind).toBe("ai-subtitle");
+      expect(saved.acquisition.transcriptSource?.lan).toBe("ai-zh");
+      expect(saved.acquisition.llm?.used).toBe(true);
+      expect(saved.videoNote.quality?.timelineCount).toBe(1);
     } finally {
       process.chdir(previous);
     }
@@ -189,7 +203,10 @@ describe("BiliSum Bilibili video intake", () => {
       expect(result.status).toBe("completed");
       expect(result.sourceItem).toBeUndefined();
       expect(result.sourceItemRef).toBeUndefined();
-      expect(await readFile(path.join(root, result.learningPackageRef), "utf8")).toContain('"writesToMaterialHub": false');
+      const manifest = await readFile(path.join(root, result.learningPackageRef), "utf8");
+      expect(manifest).toContain('"writesToMaterialHub": false');
+      expect(manifest).toContain('"transcriptSource"');
+      expect(manifest).toContain('"noteQuality"');
     } finally {
       process.chdir(previous);
     }
