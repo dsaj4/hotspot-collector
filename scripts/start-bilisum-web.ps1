@@ -132,11 +132,13 @@ if (-not (Test-BiliSumHealth)) {
 
 $token = Get-BiliSumAccessToken
 $browserWebSocket = Start-BiliSumBrowser
+$cacheBustUrl = "$url`?bilisum_refresh=$([DateTimeOffset]::Now.ToUnixTimeSeconds())"
 
 $deadline = (Get-Date).AddSeconds(60)
 while ((Get-Date) -lt $deadline) {
   if (Test-BiliSumHealth) {
     Invoke-CdpCommand -WebSocketUrl $browserWebSocket -Method "Network.enable" | Out-Null
+    Invoke-CdpCommand -WebSocketUrl $browserWebSocket -Method "Network.clearBrowserCache" | Out-Null
     Invoke-CdpCommand -WebSocketUrl $browserWebSocket -Method "Network.setCookie" -Params @{
       name = "bilisum_session"
       value = $token
@@ -147,13 +149,13 @@ while ((Get-Date) -lt $deadline) {
       sameSite = "Strict"
       expires = [int64]([DateTimeOffset]::Now.AddDays(30).ToUnixTimeSeconds())
     } | Out-Null
-    Invoke-CdpCommand -WebSocketUrl $browserWebSocket -Method "Page.navigate" -Params @{ url = $url } | Out-Null
+    Invoke-CdpCommand -WebSocketUrl $browserWebSocket -Method "Page.navigate" -Params @{ url = $cacheBustUrl } | Out-Null
     Invoke-CdpCommand -WebSocketUrl $browserWebSocket -Method "Page.bringToFront" | Out-Null
     exit 0
   }
   Start-Sleep -Seconds 1
 }
 
-Invoke-CdpCommand -WebSocketUrl $browserWebSocket -Method "Page.navigate" -Params @{ url = $url } | Out-Null
+Invoke-CdpCommand -WebSocketUrl $browserWebSocket -Method "Page.navigate" -Params @{ url = $cacheBustUrl } | Out-Null
 Invoke-CdpCommand -WebSocketUrl $browserWebSocket -Method "Page.bringToFront" | Out-Null
 exit 1

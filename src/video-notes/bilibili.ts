@@ -21,6 +21,8 @@ export type IntakeBilibiliVideoOptions = {
   day?: string;
   client?: BiliSumClient;
   config?: Partial<BiliSumClientConfig>;
+  noteModes?: string[];
+  primaryNoteMode?: string;
   publishToMaterialHub?: boolean;
 };
 
@@ -98,6 +100,35 @@ function asNumber(value: unknown): number | undefined {
 
 function asStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.map((item) => String(item)).filter(Boolean) : [];
+}
+
+function normalizeNoteVariants(result: BiliSumTaskResult): NonNullable<VideoProcessingResult["videoNote"]["variants"]> {
+  const variants = Array.isArray(result.note_variants) ? result.note_variants : [];
+  return variants
+    .filter((item) => Boolean(item && typeof item === "object" && !Array.isArray(item)))
+    .map((item) => ({
+      id: asString(item.id),
+      label: asString(item.label) || asString(item.id),
+      status: asString(item.status) || "ready",
+      markdown: asString(item.markdown) || undefined,
+      artifactPath: item.artifact_path ?? null,
+      structuredArtifactPath: item.structured_artifact_path ?? null,
+      contentType: asString(item.content_type) || undefined,
+      errorMessage: item.error_message ?? null,
+      quality: item.quality
+    }))
+    .filter((item) => Boolean(item.id));
+}
+
+function normalizeRequestedNoteModes(noteModes: string[] | undefined): string[] {
+  const modes = (noteModes?.length ? noteModes : ["knowledge_note"]).map((item) => item.trim()).filter(Boolean);
+  return [...new Set(modes)];
+}
+
+function labelForNoteMode(mode: string): string {
+  if (mode === "knowledge_note") return "知识笔记";
+  if (mode === "detailed_record") return "逐句实录";
+  return mode;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
@@ -367,9 +398,16 @@ function artifact(kind: VideoProcessingResult["artifacts"][number]["kind"], ref:
 }
 
 function artifactsFrom(task: BiliSumTaskDetail | undefined, result: BiliSumTaskResult | undefined, mindmap: BiliSumMindmapResponse | undefined, visual: BiliSumVisualEvidenceResponse | undefined): VideoProcessingResult["artifacts"] {
+  const noteVariantArtifacts = normalizeNoteVariants(result ?? {})
+    .flatMap((variant) => [
+      artifact("note-variant", variant.artifactPath),
+      artifact("note-variant-json", variant.structuredArtifactPath)
+    ])
+    .filter((item): item is VideoProcessingResult["artifacts"][number] => Boolean(item));
   const rows = [
     artifact("task-result", task?.task_id ? `bilisum:task:${task.task_id}` : undefined),
     artifact("video-note", result?.artifacts?.summary_path ?? result?.artifacts?.knowledge_note_path),
+    ...noteVariantArtifacts,
     artifact("enhanced-video-note", result?.visual_enhanced_note_artifact_path ?? result?.artifacts?.visual_enhanced_note_path),
     artifact("mindmap", result?.mindmap_artifact_path ?? result?.artifacts?.mindmap_path ?? (mindmap?.status ? `bilisum:mindmap:${mindmap.status}` : undefined)),
     artifact("visual-context", result?.artifacts?.visual_context_path ?? asString(visual?.context?.visual_context_path)),
@@ -405,7 +443,10 @@ function buildVideoResult(input: {
   const enhanced = asString(input.visual?.enhanced_note_markdown).trim();
   const visualNote = asString(input.visual?.visual_note_markdown).trim();
   const knowledgeNote = asString(result.knowledge_note_markdown).trim();
-  const selectedNote = visualNote || knowledgeNote;
+  const noteVariants = normalizeNoteVariants(result);
+  const primaryNoteMode = asString(result.primary_note_mode) || "knowledge_note";
+  const primaryVariant = noteVariants.find((item) => item.id === primaryNoteMode) ?? noteVariants[0];
+  const selectedNote = visualNote || primaryVariant?.markdown || knowledgeNote;
   const mindmapSummary = summarizeMindmap(input.mindmap?.mindmap);
   return {
     status: input.task.status === "completed" && transcriptText ? "completed" : "failed",
@@ -430,6 +471,8 @@ function buildVideoResult(input: {
     videoNote: {
       markdown: selectedNote,
       enhancedMarkdown: enhanced || undefined,
+      primaryMode: primaryNoteMode,
+      variants: noteVariants.length ? noteVariants : undefined,
       quality: noteQuality({ transcriptText, segments: bilisumSegments, note: selectedNote, enhancedNote: enhanced, result, visualEvidenceCount: visualEvidence.length })
     },
     mindmap: input.mindmap ? { status: input.mindmap.status, json: input.mindmap.mindmap, textSummary: mindmapSummary || undefined } : undefined,
@@ -553,13 +596,21 @@ async function writeLearningPackageManifest(day: string, result: VideoProcessing
   const expectedArtifacts = taskRoot ? [
     path.join(taskRoot, "transcript.txt"),
     path.join(taskRoot, "knowledge_note.md"),
+    path.join(taskRoot, "detailed_record.md"),
+    path.join(taskRoot, "detailed_record.json"),
     path.join(taskRoot, "mindmap.json"),
     path.join(taskRoot, "visual_evidence", "visual_note.md"),
     path.join(taskRoot, "visual_evidence", "visual_enhanced_note.md"),
     path.join(taskRoot, "visual_evidence", "visual_context.json"),
     path.join(taskRoot, "visual_evidence", "frame_index.json"),
     path.join(taskRoot, "visual_evidence", "visual_keyframe_plan.json"),
-    path.join(taskRoot, "visual_evidence", "visual_insert_plan.json")
+    path.join(taskRoot, "visual_evidence", "visual_insert_plan.json"),
+    path.join(taskRoot, "visual_evidence", "detailed_record", "visual_note.md"),
+    path.join(taskRoot, "visual_evidence", "detailed_record", "visual_enhanced_note.md"),
+    path.join(taskRoot, "visual_evidence", "detailed_record", "visual_context.json"),
+    path.join(taskRoot, "visual_evidence", "detailed_record", "frame_index.json"),
+    path.join(taskRoot, "visual_evidence", "detailed_record", "visual_keyframe_plan.json"),
+    path.join(taskRoot, "visual_evidence", "detailed_record", "visual_insert_plan.json")
   ] : [];
   const existingExpected: string[] = [];
   for (const artifactPath of expectedArtifacts) {
@@ -606,6 +657,9 @@ async function writeLearningPackageManifest(day: string, result: VideoProcessing
     transcriptKind: result.acquisition.transcriptKind,
     transcriptSource: result.acquisition.transcriptSource,
     llm: result.acquisition.llm,
+    noteModes: result.videoNote.variants?.map((item) => item.id) ?? ["knowledge_note"],
+    primaryNoteMode: result.videoNote.primaryMode ?? "knowledge_note",
+    noteVariants: result.videoNote.variants,
     noteQuality: result.videoNote.quality,
     mindmapStatus: result.mindmap?.status ?? "missing",
     visualEvidenceStatus: asString(visualContext?.status) || (result.visualEvidence.length ? "ready" : "missing"),
@@ -630,13 +684,21 @@ export async function intakeBilibiliVideo(options: IntakeBilibiliVideoOptions): 
   };
   const videoId = extractBilibiliVideoId(options.url);
   if (!videoId) throw new Error(`Not a Bilibili video URL: ${options.url}`);
+  const requestedNoteModes = normalizeRequestedNoteModes(options.noteModes);
+  const requestedPrimaryNoteMode = options.primaryNoteMode?.trim() || requestedNoteModes[0] || "knowledge_note";
 
   const warnings: string[] = [];
   let processing: VideoProcessingResult;
   let taskId: string | undefined;
 
   const client = options.client ?? new BiliSumClient(defaultConfig(options.config));
-  const created = await client.createBilibiliUrlTask({ url: candidate.url, title: candidate.title, visualNoteMode: options.config?.visualNoteMode });
+  const created = await client.createBilibiliUrlTask({
+    url: candidate.url,
+    title: candidate.title,
+    visualNoteMode: options.config?.visualNoteMode,
+    noteModes: requestedNoteModes,
+    primaryNoteMode: requestedPrimaryNoteMode
+  });
   taskId = created.task_id;
   const task = await client.waitForTask(created.task_id);
   if (task.status !== "completed") {
@@ -654,7 +716,16 @@ export async function intakeBilibiliVideo(options: IntakeBilibiliVideoOptions): 
       },
       acquisition: { transcriptKind: "missing", provider: "bilisum", usedAsr: false, warnings },
       transcript: { text: "", segments: [] },
-      videoNote: { markdown: "" },
+      videoNote: {
+        markdown: "",
+        primaryMode: requestedPrimaryNoteMode,
+        variants: requestedNoteModes.map((mode) => ({
+          id: mode,
+          label: labelForNoteMode(mode),
+          status: "failed",
+          errorMessage: task.error_message ?? `BiliSum task ended with status ${task.status}.`
+        }))
+      },
       visualEvidence: [],
       artifacts: artifactsFrom(task, task.result ?? undefined, undefined, undefined)
     };

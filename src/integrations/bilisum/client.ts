@@ -12,6 +12,8 @@ export type BiliSumTaskDetail = {
 export type BiliSumTaskResult = {
   overview?: string;
   knowledge_note_markdown?: string;
+  note_variants?: BiliSumNoteVariant[];
+  primary_note_mode?: string;
   transcript_text?: string;
   segments?: Array<Record<string, unknown>>;
   segment_summaries?: string[];
@@ -29,6 +31,19 @@ export type BiliSumTaskResult = {
   visual_enhanced_note_artifact_path?: string | null;
   visual_frame_count?: number;
   visual_insert_count?: number;
+};
+
+export type BiliSumNoteVariant = {
+  id: string;
+  label: string;
+  status: string;
+  markdown?: string;
+  artifact_path?: string | null;
+  structured_artifact_path?: string | null;
+  content_type?: string;
+  structured?: Record<string, unknown> | null;
+  error_message?: string | null;
+  quality?: Record<string, unknown>;
 };
 
 export type BiliSumMindmapResponse = {
@@ -61,7 +76,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export class BiliSumClient {
   constructor(private readonly config: BiliSumClientConfig) {}
 
-  async createBilibiliUrlTask(input: { url: string; title?: string; visualNoteMode?: string }): Promise<BiliSumTaskDetail> {
+  async createBilibiliUrlTask(input: { url: string; title?: string; visualNoteMode?: string; noteModes?: string[]; primaryNoteMode?: string }): Promise<BiliSumTaskDetail> {
     return this.requestJson<BiliSumTaskDetail>("/api/v1/tasks", {
       method: "POST",
       body: JSON.stringify({
@@ -74,6 +89,8 @@ export class BiliSumClient {
           summary_mode: "auto",
           prefer_subtitles: true,
           visual_note_mode: input.visualNoteMode ?? this.config.visualNoteMode,
+          note_modes: input.noteModes?.length ? input.noteModes : undefined,
+          primary_note_mode: input.primaryNoteMode,
           export_formats: ["md", "json"]
         }
       })

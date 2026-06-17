@@ -57,6 +57,18 @@ export type VideoProcessingResult = {
   videoNote: {
     markdown: string;
     enhancedMarkdown?: string;
+    primaryMode?: string;
+    variants?: Array<{
+      id: string;
+      label: string;
+      status: string;
+      markdown?: string;
+      artifactPath?: string | null;
+      structuredArtifactPath?: string | null;
+      contentType?: string;
+      errorMessage?: string | null;
+      quality?: Record<string, unknown>;
+    }>;
     quality?: {
       transcriptChars: number;
       segmentCount: number;
@@ -92,6 +104,8 @@ export type VideoProcessingResult = {
       | "task-result"
       | "transcript"
       | "video-note"
+      | "note-variant"
+      | "note-variant-json"
       | "enhanced-video-note"
       | "mindmap"
       | "visual-context"

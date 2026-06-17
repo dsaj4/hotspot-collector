@@ -91,6 +91,15 @@ function readWorkflowStage(value: string | undefined): "collect" | "digest" | "m
   return "collect";
 }
 
+function readNoteModes(): string[] | undefined {
+  const single = readOption("note-mode");
+  const multiple = readOption("note-modes");
+  const raw = single ?? multiple;
+  if (!raw) return undefined;
+  const values = raw.split(",").map((item) => item.trim()).filter(Boolean);
+  return values.length ? values : undefined;
+}
+
 async function main(): Promise<void> {
   const command = process.argv[2] as Command | undefined;
 
@@ -116,7 +125,9 @@ async function main(): Promise<void> {
       await intakeBilibiliVideo({
         url: requiredOption("url"),
         title: readOption("title"),
-        sourceKind: (readOption("source-kind") as never) ?? "temporary-link"
+        sourceKind: (readOption("source-kind") as never) ?? "temporary-link",
+        noteModes: readNoteModes(),
+        primaryNoteMode: readOption("primary-note-mode")
       })
     );
     return;
@@ -129,6 +140,8 @@ async function main(): Promise<void> {
         url: requiredOption("url"),
         title: readOption("title"),
         sourceKind: "temporary-link",
+        noteModes: readNoteModes(),
+        primaryNoteMode: readOption("primary-note-mode"),
         publishToMaterialHub: false
       })
     );
