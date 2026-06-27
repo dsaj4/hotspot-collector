@@ -80,13 +80,15 @@ browser-use doctor
 Run a public Bilibili popular-page sample:
 
 ```text
+npm.cmd run browser:cdp -- --platform=bilibili --port=9223 --url=https://www.bilibili.com/v/popular/all/
 powershell -ExecutionPolicy Bypass -File skills/social-browser-collection/skill/scripts/browser-use-cdp-visible-collect.ps1 `
   -Platform bilibili `
   -Port 9223 `
   -Url "https://www.bilibili.com/v/popular/all/" `
   -StreamType hotspot `
   -Limit 8 `
-  -Output data/demo/browser-use-bilibili-popular-observation.json
+  -Output data/demo/browser-use-bilibili-popular-observation.json `
+  -BrowserUseOnly
 ```
 
 Then ingest the generated observation:
@@ -98,8 +100,10 @@ npm.cmd run social:ingest -- --input=data/demo/browser-use-bilibili-popular-obse
 Agent operating rules for the CDP demo:
 
 - Start with a public page or a page the user has already opened in the dedicated browser profile.
-- Use `browser-use state` only to inspect the current page before extraction.
-- Use the provided script for extraction; it only reads visible anchors and does not click, type, scroll, or read cookies.
+- The preferred deterministic path is `browser-use-script`: Browser Use connects to the project CDP browser, gets the shared extraction script from `browser:extraction-script`, runs read-only `browser-use eval`, and writes `collectionMethod: "browser-use-script"`.
+- The interactive path is `browser-use-agent`: use Browser Use to inspect, click visible controls, scroll with approval, or wait for visible content, then save the same observation shape with `collectionMethod: "browser-use-agent"`.
+- The final project fallback is `direct-cdp`: `browser:collect-social` executes the same shared extraction script directly over CDP and writes `collectionMethod: "direct-cdp"`.
+- Keep extraction rules in `src/collection/social/browser-extraction.ts`; do not duplicate selector logic in PowerShell or skill prompts.
 - Ask before changing the URL, long scrolling, clicking into items, or collecting account-specific/private pages.
 - Stop on login walls, CAPTCHA, anti-bot prompts, or paywalls and return `status: "unavailable"` with a short message.
 - Do not run `browser-use cookies`, `browser-use profile sync`, or cloud/profile commands for this workflow.

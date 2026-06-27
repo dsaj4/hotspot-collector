@@ -5,6 +5,7 @@ export type SourceStatus = "ok" | "cache" | "empty" | "error" | "unavailable";
 export type SourceFetchMode = "public-api" | "direct-rss" | "rsshub" | "cookie-http" | "browser-session";
 export type SocialStreamType = "subscription" | "search" | "favorite" | "hotspot" | "home-feed";
 export type SocialFallbackAdapter = "bilibili-hotspots" | "weibo-hotspots" | "rsshub-subscription";
+export type BrowserCollectionMethod = "browser-use-script" | "browser-use-agent" | "direct-cdp";
 
 export type SourceConfig = {
   id: string;
@@ -46,7 +47,7 @@ export type SocialItem = {
   id: string;
   sourceId: string;
   platform: string;
-  provider: "browser-use";
+  provider: BrowserCollectionMethod;
   streamType: SocialStreamType;
   title: string;
   url: string;
@@ -81,6 +82,7 @@ export type BrowserObservation = {
   streamType: SocialStreamType;
   pageUrl: string;
   status: "ok" | "empty" | "error" | "unavailable";
+  collectionMethod?: BrowserCollectionMethod;
   capturedAt?: string;
   message?: string;
   items: BrowserObservationItem[];

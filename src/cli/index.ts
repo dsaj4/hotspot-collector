@@ -17,6 +17,8 @@ type Command =
   | "secrets:delete"
   | "browser:login"
   | "browser:cdp"
+  | "browser:extraction-script"
+  | "browser:collect-social"
   | "browser:status"
   | "browser:clear"
   | "social:ingest"
@@ -45,6 +47,13 @@ function printJson(value: unknown): void {
 
 function printText(value: string): void {
   process.stdout.write(`${value.trimEnd()}\n`);
+}
+
+async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
+  const { mkdir, writeFile } = await import("node:fs/promises");
+  const path = await import("node:path");
+  await mkdir(path.dirname(path.resolve(filePath)), { recursive: true });
+  await writeFile(filePath, JSON.stringify(value, null, 2), "utf8");
 }
 
 function isHelpRequested(): boolean {
@@ -261,6 +270,58 @@ async function main(): Promise<void> {
         browserPath: readOption("browser")
       })
     );
+    return;
+  }
+
+  if (command === "browser:collect-social") {
+    const { collectBrowserObservationViaCdp } = await import("../collection/social/browser-collectors.js");
+    const platform = requiredOption("platform");
+    if (!["bilibili", "weibo", "xiaohongshu", "wechat"].includes(platform)) throw new Error("--platform must be bilibili, weibo, xiaohongshu, or wechat.");
+    const stream = requiredOption("stream");
+    if (!["subscription", "search", "favorite", "hotspot", "home-feed"].includes(stream)) throw new Error("--stream must be a known social stream.");
+    const observation = await collectBrowserObservationViaCdp({
+      platform: platform as never,
+      streamType: stream as never,
+      sourceId: readOption("source"),
+      pageUrl: requiredOption("url"),
+      port: parsePositiveIntegerOption(readOption("port")),
+      limit: parsePositiveIntegerOption(readOption("limit"))
+    });
+    const output = readOption("output");
+    if (output) {
+      await writeJsonFile(output, observation);
+      printJson({ output, status: observation.status, itemCount: observation.items.length });
+    } else {
+      printJson(observation);
+    }
+    return;
+  }
+
+  if (command === "browser:extraction-script") {
+    const { buildVisibleSocialExtractionScript } = await import("../collection/social/browser-extraction.js");
+    const platform = requiredOption("platform");
+    if (!["bilibili", "weibo", "xiaohongshu", "wechat"].includes(platform)) throw new Error("--platform must be bilibili, weibo, xiaohongshu, or wechat.");
+    const stream = requiredOption("stream");
+    if (!["subscription", "search", "favorite", "hotspot", "home-feed"].includes(stream)) throw new Error("--stream must be a known social stream.");
+    const method = readOption("method") ?? "browser-use-script";
+    if (!["browser-use-script", "browser-use-agent", "direct-cdp"].includes(method)) throw new Error("--method must be browser-use-script, browser-use-agent, or direct-cdp.");
+    const script = buildVisibleSocialExtractionScript({
+      platform: platform as never,
+      streamType: stream as never,
+      sourceId: readOption("source") ?? `${platform}-${method}`,
+      collectionMethod: method as never,
+      limit: parsePositiveIntegerOption(readOption("limit"))
+    });
+    const output = readOption("output");
+    if (output) {
+      const { mkdir, writeFile } = await import("node:fs/promises");
+      const path = await import("node:path");
+      await mkdir(path.dirname(path.resolve(output)), { recursive: true });
+      await writeFile(output, script, "utf8");
+      printJson({ output });
+    } else {
+      printText(script);
+    }
     return;
   }
 

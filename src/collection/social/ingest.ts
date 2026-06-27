@@ -9,11 +9,12 @@ import { validateBrowserObservation } from "../../validation/normalized.js";
 function toSocialItem(observation: BrowserObservation, rawRef: string, capturedAt: string, index: number): SocialItem {
   const item = observation.items[index];
   const stable = item.externalId || item.url;
+  const provider = observation.collectionMethod ?? "browser-use-script";
   return {
     id: `${observation.platform}-${sha1(`${observation.sourceId}:${stable}`).slice(0, 16)}`,
     sourceId: observation.sourceId,
     platform: observation.platform,
-    provider: "browser-use",
+    provider,
     streamType: observation.streamType,
     title: item.title.trim(),
     url: item.url,
@@ -76,7 +77,8 @@ export async function ingestBrowserObservation(observation: BrowserObservation):
   if (issues.length) throw new Error(issues.map((issue) => `${issue.path}: ${issue.message}`).join("; "));
 
   const capturedAt = observation.capturedAt ?? new Date().toISOString();
-  const rawRef = await writeRawSnapshot(observation.sourceId, { provider: "browser-use", ...observation, capturedAt });
+  const provider = observation.collectionMethod ?? "browser-use-script";
+  const rawRef = await writeRawSnapshot(observation.sourceId, { provider, ...observation, capturedAt });
   const items = observation.items.map((_, index) => toSocialItem(observation, rawRef, capturedAt, index));
   const socialRef = await appendSocialItems(items);
   const normalizedRefs = [socialRef];
@@ -92,7 +94,7 @@ export async function ingestBrowserObservation(observation: BrowserObservation):
     sourceId: observation.sourceId,
     status: observation.status,
     checkedAt: capturedAt,
-    provider: "browser-use",
+    provider,
     itemCount: items.length,
     message: observation.message,
     successWindowHours: 6,
@@ -103,5 +105,6 @@ export async function ingestBrowserObservation(observation: BrowserObservation):
 }
 
 export async function ingestBrowserObservationFile(filePath: string): Promise<Awaited<ReturnType<typeof ingestBrowserObservation>>> {
-  return ingestBrowserObservation(JSON.parse(await readFile(filePath, "utf8")) as BrowserObservation);
+  const text = (await readFile(filePath, "utf8")).replace(/^\uFEFF/, "");
+  return ingestBrowserObservation(JSON.parse(text) as BrowserObservation);
 }

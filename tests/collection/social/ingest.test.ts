@@ -16,6 +16,7 @@ describe("browser social ingest", () => {
         sourceId: "xiaohongshu-home",
         platform: "xiaohongshu" as const,
         streamType: "home-feed" as const,
+        collectionMethod: "browser-use-agent" as const,
         pageUrl: "https://www.xiaohongshu.com/explore",
         status: "ok" as const,
         capturedAt: "2026-06-11T00:00:00.000Z",
@@ -28,6 +29,7 @@ describe("browser social ingest", () => {
       const subscriptions = await readFile(artifactPath(`data/normalized/${day}/subscriptions.jsonl`), "utf8");
       expect(social.trim().split(/\r?\n/)).toHaveLength(1);
       expect(subscriptions.trim().split(/\r?\n/)).toHaveLength(1);
+      expect(JSON.parse(social.trim()).provider).toBe("browser-use-agent");
     } finally {
       process.chdir(previous);
     }
