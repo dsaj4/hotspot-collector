@@ -1,29 +1,39 @@
 ---
 name: hotspot-collector-orchestrator
-description: Route user requests across the simplified Hotspot Collector skill set by user goal. Use when the user asks to collect social-media URLs through a browser, summarize Bilibili videos or batches, create material from links, organize hotspots or subscriptions, produce material cards, inspect operations, or synchronize the material hub with IMA.
+description: Route Hotspot Collector requests to the current focused skill set. Use when the user asks broadly to use hotspot-collector, collect social-media URLs, summarize or make notes from Bilibili videos, process selected Bilibili URLs, generate material cards, collect hotspots or subscriptions, inspect BiliSum/material-hub operations, or sync local material cards with IMA.
 ---
 
 # Hotspot Collector Orchestrator
 
-Work from `E:\Project\hotspot-collector`. Route by desired outcome, not merely by platform.
+Work from `E:\Project\hotspot-collector`. This skill is only a router: pick the narrow skill that matches the user's desired output, then follow that skill.
 
-| User goal | Skill |
-|---|---|
-| 浏览器采集社交媒体可见条目、URL、B站收藏夹 URL 列表 | `social-browser-collection` |
-| B站总结、字幕、视频笔记、图文笔记、导图、截图证据、批量 URL 笔记 | `bilisum-video-notes` |
-| 链接做成素材、素材卡、完整内容处理 | `material-hub-pipeline` |
-| 获取/整理/生产时事热点 | `hotspot-intelligence-collection` |
-| 更新/整理/生产长期订阅内容 | `subscription-material-collection` |
-| 推送、拉取、核对、双向同步 IMA | `material-hub-ima-sync` |
-| 浏览器登录态、运行健康、测试 | `social-browser-collection` for collection, otherwise project commands |
+## Current Routing
 
-- “总结这个 B 站视频” stops at the BiliSum learning package.
-- “读取这个 B 站收藏夹/列表” first extracts visible URLs with `social-browser-collection`.
-- “把这些 B 站 URL 做视频笔记” uses `bilisum-video-notes` batch input.
-- “把这个 B 站视频做成素材” runs BiliSum, Digest, and aggregation.
-- “获取热点/更新订阅” never invokes an LLM.
-- “整理热点/订阅” creates Digests and a topic brief, but not a material card.
-- “生成素材卡” runs the full local production pipeline.
-- IMA sync is always explicit and separate.
+- Browser collection of visible social-media items, Bilibili favorites/list URLs, subscription pages, search pages, or login/status guidance: use `social-browser-collection`.
+- Standalone Bilibili video notes, AI subtitles, transcript, screenshots, visual evidence, VLM-enhanced notes, mind map, or batch notes from a prepared URL list/BrowserObservation JSON: use `bilisum-video-notes`.
+- Turn a link, BiliSum result, collected source item, or local text into Digest(s), aggregated material cards, source decisions, and material-hub records: use `material-hub-pipeline`.
+- Collect or organize current hotspots/ranking sources, daily topic briefs, or hotspot-derived material inputs: use `hotspot-intelligence-collection`.
+- Update or organize long-term subscription sources and subscription-derived material inputs: use `subscription-material-collection`.
+- Explicitly push, pull, compare, or synchronize material-hub content with the fixed IMA knowledge base: use `material-hub-ima-sync`.
 
-Use existing npm commands. Run `npm.cmd run check` after implementation changes.
+## Boundaries
+
+- Do not run full material-card generation when the user only asks for Bilibili notes. Stop at the BiliSum learning package.
+- Do not make `social-browser-collection` do topic filtering, LLM reranking, BiliSum processing, material cards, or IMA sync. It should only collect visible items and URLs.
+- Do not auto-run ASR for BiliSum by default. Prefer Bilibili AI subtitles; return that ASR is needed when subtitles are unavailable unless the user explicitly asks to run ASR.
+- Treat BiliSum as an isolated subsystem. Its UI and database remain usable at `http://127.0.0.1:3838` when the service is running with the Hotspot Collector data root.
+- Keep IMA sync explicit and separate from collection, BiliSum notes, and material-card generation.
+
+## Useful Commands
+
+```powershell
+npm.cmd run video:bilisum-status
+npm.cmd run video:notes-bilibili -- --url=<bilibili-url> --title=<optional-title>
+npm.cmd run video:notes-bilibili-list -- --input=<url-list-or-browser-observation-json> --limit=10
+npm.cmd run material:process -- --input=<source-or-workspace-ref>
+npm.cmd run workflow:hotspots
+npm.cmd run workflow:subscriptions
+npm.cmd run material:config-status
+```
+
+Run `npm.cmd run check` after code or test changes.
