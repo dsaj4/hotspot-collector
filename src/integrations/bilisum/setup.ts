@@ -174,6 +174,16 @@ async function resolveDeepSeekApiKey(secretLookup?: (name: string) => Promise<st
   return await readKeePassSecretFromBroker("DEEPSEEK_API_KEY") ?? "";
 }
 
+async function resolveDashScopeApiKey(secretLookup?: (name: string) => Promise<string | null>): Promise<string> {
+  if (process.env.DASHSCOPE_API_KEY) return process.env.DASHSCOPE_API_KEY;
+  if (process.env.VIDEO_SUM_DASHSCOPE_FUNASR_API_KEY) return process.env.VIDEO_SUM_DASHSCOPE_FUNASR_API_KEY;
+  const lookedUp = await secretLookup?.("DASHSCOPE_API_KEY");
+  if (lookedUp) return lookedUp;
+  const bitwardenSecret = await readBitwardenSecret("DASHSCOPE_API_KEY");
+  if (bitwardenSecret) return bitwardenSecret;
+  return await readKeePassSecretFromBroker("DASHSCOPE_API_KEY") ?? "";
+}
+
 async function findExistingBiliSumCookieFile(appDataRoot: string): Promise<string | null> {
   const candidates = [
     path.join(appDataRoot, "cookies", "bilibili.txt"),
@@ -192,11 +202,15 @@ async function findExistingBiliSumCookieFile(appDataRoot: string): Promise<strin
 
 async function updateBiliSumSettings(baseUrl: string, accessToken: string, env: Record<string, string>): Promise<boolean> {
   const payload = {
+    transcription_provider: env.VIDEO_SUM_TRANSCRIPTION_PROVIDER,
     llm_enabled: env.VIDEO_SUM_LLM_ENABLED === "true",
     llm_provider: "openai-compatible",
     llm_base_url: env.VIDEO_SUM_LLM_BASE_URL,
     llm_model: env.VIDEO_SUM_LLM_MODEL,
     llm_api_key: env.VIDEO_SUM_LLM_API_KEY,
+    dashscope_funasr_endpoint: env.VIDEO_SUM_DASHSCOPE_FUNASR_ENDPOINT,
+    dashscope_funasr_model: env.VIDEO_SUM_DASHSCOPE_FUNASR_MODEL,
+    dashscope_funasr_api_key: env.VIDEO_SUM_DASHSCOPE_FUNASR_API_KEY,
     visual_evidence_base_url: env.VIDEO_SUM_LLM_BASE_URL,
     visual_evidence_model: env.VIDEO_SUM_LLM_MODEL,
     visual_evidence_api_key: env.VIDEO_SUM_LLM_API_KEY,
@@ -237,6 +251,7 @@ export async function setupBiliSum(options: SetupOptions = {}): Promise<BiliSumS
   const warnings: string[] = [];
   const ffmpegDir = await findFfmpegDir();
   const resolvedDeepSeekApiKey = await resolveDeepSeekApiKey(options.secretLookup);
+  const resolvedDashScopeApiKey = await resolveDashScopeApiKey(options.secretLookup);
   const cookieBridge = await exportBilibiliCdpCookies(appDataRoot);
   let cookieFile = cookieBridge.cookieFile;
   if (!cookieFile) {
@@ -253,10 +268,15 @@ export async function setupBiliSum(options: SetupOptions = {}): Promise<BiliSumS
     VIDEO_SUM_LLM_BASE_URL: deepseekBaseUrl,
     VIDEO_SUM_LLM_MODEL: deepseekModel,
     VIDEO_SUM_LLM_API_KEY: resolvedDeepSeekApiKey,
+    VIDEO_SUM_TRANSCRIPTION_PROVIDER: resolvedDashScopeApiKey ? "dashscope_funasr" : "siliconflow",
+    VIDEO_SUM_DASHSCOPE_FUNASR_ENDPOINT: "https://llm-nv7r2rp4wj9l7cn8.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
+    VIDEO_SUM_DASHSCOPE_FUNASR_MODEL: "fun-asr-flash-2026-06-15",
+    VIDEO_SUM_DASHSCOPE_FUNASR_API_KEY: resolvedDashScopeApiKey,
     VIDEO_SUM_FFMPEG_DIR: ffmpegDir,
     VIDEO_SUM_YTDLP_COOKIES_FILE: cookieFile ?? ""
   };
   if (!resolvedDeepSeekApiKey) warnings.push("DeepSeek API key is not configured; authorize DEEPSEEK_API_KEY in Bitwarden or save it with secrets:set --platform=deepseek --type=token, then rerun setup.");
+  if (!resolvedDashScopeApiKey) warnings.push("DashScope API key is not configured; authorize DASHSCOPE_API_KEY in Bitwarden, then rerun setup to enable online FunASR.");
   if (!bilibiliCookie && !cookieFile) warnings.push("Bilibili cookies are not configured; some Bilibili videos may be unavailable to BiliSum.");
   if (!ffmpegDir) warnings.push("FFmpeg was not found; BiliSum visual evidence frame extraction will be unavailable.");
 
